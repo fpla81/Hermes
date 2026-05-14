@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import current_user_id
+from ..config import get_settings
 from ..db import get_db
 from ..models.case import Case, CaseStatus
 from ..schemas.case import CaseCreate, CaseRead
@@ -14,18 +15,26 @@ from ..storage import get_storage
 router = APIRouter(prefix="/cases", tags=["cases"])
 
 
-def _enqueue_capture(case_id: str) -> None:
-    """Indireção testável: envia a task para o broker."""
-    # Importação tardia para evitar dependência circular com hermes_worker em testes.
-    from celery import current_app
+def _get_celery():
+    """Lazy singleton com broker/backend de Redis das nossas settings."""
+    from celery import Celery
 
-    current_app.send_task("hermes.capture_case", args=[case_id])
+    settings = get_settings()
+    if not hasattr(_get_celery, "_app"):
+        _get_celery._app = Celery(
+            "hermes",
+            broker=settings.celery_broker_url,
+            backend=settings.celery_result_backend,
+        )
+    return _get_celery._app
+
+
+def _enqueue_capture(case_id: str) -> None:
+    _get_celery().send_task("hermes.capture_case", args=[case_id])
 
 
 def _enqueue_analyze(case_id: str) -> None:
-    from celery import current_app
-
-    current_app.send_task("hermes.analyze_case", args=[case_id])
+    _get_celery().send_task("hermes.analyze_case", args=[case_id])
 
 
 @router.get("", response_model=list[CaseRead])
