@@ -76,3 +76,33 @@ def test_capture_unknown_case(sync_session) -> None:
 
     result = capture_case.run(str(uuid.uuid4()))
     assert result["status"] == "not_found"
+
+
+def test_capture_uses_storage_when_configured(sync_session, mocker) -> None:
+    from hermes_worker.tasks.capture import capture_case
+
+    case_id = _seed(sync_session)
+    fake_http = mocker.Mock(status_code=200)
+    fake_http.raise_for_status = mocker.Mock()
+    fake_http.json.return_value = {"html": "<html>S3</html>", "documentos": []}
+    mocker.patch(
+        "hermes_worker.tasks.capture.httpx.post", return_value=fake_http
+    )
+    fake_storage = mocker.Mock()
+    mocker.patch(
+        "hermes_worker.tasks.capture.get_storage", return_value=fake_storage
+    )
+
+    result = capture_case.run(case_id)
+    assert result["status"] == "captured"
+
+    fake_storage.put_bytes.assert_called_once()
+    args, kwargs = fake_storage.put_bytes.call_args
+    assert args[0] == f"cases/{case_id}/raw.html"
+    assert args[1] == b"<html>S3</html>"
+
+    with sync_session() as s:
+        c = s.get(Case, uuid.UUID(case_id))
+        assert c.raw_html is None
+        assert c.artifact_key == f"cases/{case_id}/raw.html"
+        assert c.status == CaseStatus.captured

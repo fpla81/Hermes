@@ -1,6 +1,7 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import anyio
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,6 +9,7 @@ from ..auth import current_user_id
 from ..db import get_db
 from ..models.case import Case, CaseStatus
 from ..schemas.case import CaseCreate, CaseRead
+from ..storage import get_storage
 
 router = APIRouter(prefix="/cases", tags=["cases"])
 
@@ -58,6 +60,31 @@ async def get_case(
     if case is None or case.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return case
+
+
+@router.get("/{case_id}/html")
+async def get_case_html(
+    case_id: uuid.UUID,
+    user_id: str = Depends(current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    case = await db.get(Case, case_id)
+    if case is None or case.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if case.artifact_key:
+        storage = get_storage()
+        if storage is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="storage não configurado",
+            )
+        body = await anyio.to_thread.run_sync(storage.get_bytes, case.artifact_key)
+        return Response(content=body, media_type="text/html; charset=utf-8")
+    if case.raw_html is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="caso ainda não foi capturado"
+        )
+    return Response(content=case.raw_html, media_type="text/html; charset=utf-8")
 
 
 @router.post("/{case_id}/capture", status_code=status.HTTP_202_ACCEPTED)

@@ -61,3 +61,11 @@ def test_get_and_delete(client) -> None:
 
     r = client.get(f"/cases/{cid}", headers=HEADERS)
     assert r.status_code == 404
+
+
+def test_html_404_before_capture(client) -> None:
+    created = client.post(
+        "/cases", json={"numero_processo": VALID}, headers=HEADERS
+    ).json()
+    r = client.get(f"/cases/{created['id']}/html", headers=HEADERS)
+    assert r.status_code == 404

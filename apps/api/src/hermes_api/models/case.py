@@ -34,6 +34,7 @@ class Case(Base):
         default=CaseStatus.draft,
     )
     raw_html: Mapped[str | None] = mapped_column(Text, nullable=True)
+    artifact_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     captured_at: Mapped[datetime | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(

@@ -23,6 +23,17 @@ export async function listCases(): Promise<Case[]> {
   return apiJson<Case[]>("/cases");
 }
 
+export async function getCase(id: string): Promise<Case | null> {
+  const res = await apiFetch(`/cases/${id}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`get falhou: ${res.status}`);
+  return res.json() as Promise<Case>;
+}
+
+export async function getCaseHtml(id: string): Promise<Response> {
+  return apiFetch(`/cases/${id}/html`);
+}
+
 export async function createCase(input: {
   numero_processo: string;
   titulo?: string | null;

@@ -1,13 +1,19 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 import { listCases } from "@/lib/cases";
 import { captureCaseAction, deleteCaseAction } from "./actions";
+import { CasesAutoRefresh } from "./refresh";
 
 export default async function CasesPage() {
   const cases = await listCases();
+  const inFlight = cases.some(
+    (c) => c.status === "capturing" || c.status === "analyzing",
+  );
 
   return (
     <div className="space-y-6">
+      {inFlight && <CasesAutoRefresh />}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Casos</h1>
         <Link
@@ -38,7 +44,12 @@ export default async function CasesPage() {
               {cases.map((c) => (
                 <tr key={c.id} className="border-b last:border-b-0">
                   <td className="px-4 py-2 font-mono text-xs">
-                    {c.numero_processo}
+                    <Link
+                      href={`/cases/${c.id}` as Route}
+                      className="hover:underline"
+                    >
+                      {c.numero_processo}
+                    </Link>
                   </td>
                   <td className="px-4 py-2">{c.titulo ?? "—"}</td>
                   <td className="px-4 py-2">{c.status}</td>

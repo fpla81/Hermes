@@ -7,6 +7,7 @@ import httpx
 from hermes_api.config import get_settings
 from hermes_api.db import SyncSessionLocal
 from hermes_api.models.case import Case, CaseStatus
+from hermes_api.storage import get_storage
 
 from ..celery_app import celery_app
 
@@ -32,7 +33,17 @@ def capture_case(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
             )
             r.raise_for_status()
             data = r.json()
-            case.raw_html = data["html"]
+            html: str = data["html"]
+            storage = get_storage()
+            if storage is not None:
+                key = f"cases/{case_id}/raw.html"
+                storage.put_bytes(
+                    key, html.encode("utf-8"), content_type="text/html; charset=utf-8"
+                )
+                case.artifact_key = key
+                case.raw_html = None
+            else:
+                case.raw_html = html
             case.captured_at = datetime.now(UTC)
             case.status = CaseStatus.captured
             session.commit()

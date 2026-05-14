@@ -1,10 +1,10 @@
 import re
-from datetime import UTC, datetime
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
 from . import __version__
+from .capture import Capturer, build_capturer
 
 app = FastAPI(
     title="Hermes Playwright Service",
@@ -20,16 +20,21 @@ class CaptureRequest(BaseModel):
     numero_processo: str = Field(..., min_length=20, max_length=64)
 
 
-class CapturedDocument(BaseModel):
+class CapturedDocumentOut(BaseModel):
     titulo: str
     data: str | None = None
 
 
 class CaptureResponse(BaseModel):
     numero_processo: str
-    captured_at: datetime
+    captured_at: str
     html: str
-    documentos: list[CapturedDocument]
+    documentos: list[CapturedDocumentOut]
+
+
+def get_capturer() -> Capturer:
+    """Override via dependency_overrides em testes."""
+    return build_capturer()
 
 
 @app.get("/health")
@@ -38,24 +43,21 @@ async def health() -> dict[str, str]:
 
 
 @app.post("/capture", response_model=CaptureResponse)
-async def capture(payload: CaptureRequest) -> CaptureResponse:
+async def capture(
+    payload: CaptureRequest,
+    capturer: Capturer = Depends(get_capturer),
+) -> CaptureResponse:
     if not PROCESSO_RE.match(payload.numero_processo):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="numero_processo inválido",
         )
-    # TODO(fase-2): substituir pelo capture real do Bem-te-vi (Playwright + sessão).
-    stub_html = (
-        f"<html><body><h1>Processo {payload.numero_processo}</h1>"
-        "<p>STUB — captura real será implementada na Fase 2.</p>"
-        "</body></html>"
-    )
+    data = await capturer.capture(payload.numero_processo)
     return CaptureResponse(
-        numero_processo=payload.numero_processo,
-        captured_at=datetime.now(UTC),
-        html=stub_html,
+        numero_processo=data.numero_processo,
+        captured_at=data.captured_at.isoformat(),
+        html=data.html,
         documentos=[
-            CapturedDocument(titulo="Petição inicial (stub)", data="2024-01-15"),
-            CapturedDocument(titulo="Contestação (stub)", data="2024-02-10"),
+            CapturedDocumentOut(titulo=d.titulo, data=d.data) for d in data.documentos
         ],
     )
