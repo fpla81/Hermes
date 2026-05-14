@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
@@ -52,7 +52,7 @@ async def capture(payload: CaptureRequest) -> CaptureResponse:
     )
     return CaptureResponse(
         numero_processo=payload.numero_processo,
-        captured_at=datetime.now(timezone.utc),
+        captured_at=datetime.now(UTC),
         html=stub_html,
         documentos=[
             CapturedDocument(titulo="Petição inicial (stub)", data="2024-01-15"),
