@@ -1,5 +1,4 @@
 from celery import Celery
-
 from hermes_api.config import get_settings
 
 settings = get_settings()
