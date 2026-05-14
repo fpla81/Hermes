@@ -141,7 +141,7 @@ services:
       - "8001:8001"
     volumes:
       - ../apps/playwright:/app/apps/playwright
-      - bem_te_vi_profile:/app/bem_te_vi_profile
+      - ../bem_te_vi_profile:/app/bem_te_vi_profile
 
   web:
     build:
@@ -173,7 +173,6 @@ services:
 volumes:
   pg_data:
   minio_data:
-  bem_te_vi_profile:
   api_uv_cache:
   web_node_modules:
   web_root_node_modules:
