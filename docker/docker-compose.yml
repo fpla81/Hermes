@@ -78,7 +78,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
-      CORS_ORIGINS: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3100
       PLAYWRIGHT_SERVICE_URL: http://playwright:8001
     depends_on:
       postgres:
@@ -134,7 +134,7 @@ services:
     env_file: ../.env
     environment:
       WEB_DATABASE_URL: postgresql://hermes:hermes@postgres:5432/hermes
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3100
       SMTP_HOST: mailhog
       SMTP_PORT: "1025"
       API_BASE_URL: http://api:8000
@@ -147,7 +147,7 @@ services:
       api:
         condition: service_started
     ports:
-      - "3000:3000"
+      - "3100:3000"
     volumes:
       - ../apps/web:/app/apps/web
       - ../packages:/app/packages
