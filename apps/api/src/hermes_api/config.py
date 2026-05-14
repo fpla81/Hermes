@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     internal_secret: str | None = Field(
         default=None, validation_alias="HERMES_INTERNAL_SECRET"
     )
+    playwright_service_url: str = Field(
+        default="http://localhost:8001",
+        validation_alias="PLAYWRIGHT_SERVICE_URL",
+    )
 
     @property
     def cors_origins_list(self) -> list[str]:

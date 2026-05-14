@@ -1,0 +1,44 @@
+from __future__ import annotations
+
+import uuid
+from datetime import UTC, datetime
+
+import httpx
+from hermes_api.config import get_settings
+from hermes_api.db import SyncSessionLocal
+from hermes_api.models.case import Case, CaseStatus
+
+from ..celery_app import celery_app
+
+
+@celery_app.task(name="hermes.capture_case", bind=True, max_retries=0)
+def capture_case(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
+    settings = get_settings()
+    cid = uuid.UUID(case_id)
+    with SyncSessionLocal() as session:
+        case = session.get(Case, cid)
+        if case is None:
+            return {"status": "not_found", "case_id": case_id}
+
+        case.status = CaseStatus.capturing
+        case.last_error = None
+        session.commit()
+
+        try:
+            r = httpx.post(
+                f"{settings.playwright_service_url}/capture",
+                json={"numero_processo": case.numero_processo},
+                timeout=60.0,
+            )
+            r.raise_for_status()
+            data = r.json()
+            case.raw_html = data["html"]
+            case.captured_at = datetime.now(UTC)
+            case.status = CaseStatus.captured
+            session.commit()
+            return {"status": "captured", "case_id": case_id}
+        except Exception as exc:
+            case.status = CaseStatus.error
+            case.last_error = str(exc)[:500]
+            session.commit()
+            return {"status": "error", "case_id": case_id, "error": str(exc)}

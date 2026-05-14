@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "celery[redis]>=5.4",
     "hermes-api",
+    "httpx>=0.28",
     "pydantic-settings>=2.7",
     "redis>=5.2",
 ]
@@ -13,6 +14,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.3",
+    "pytest-mock>=3.14",
     "ruff>=0.8",
     "mypy>=1.13",
 ]

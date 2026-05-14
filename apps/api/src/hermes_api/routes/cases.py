@@ -6,10 +6,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import current_user_id
 from ..db import get_db
-from ..models.case import Case
+from ..models.case import Case, CaseStatus
 from ..schemas.case import CaseCreate, CaseRead
 
 router = APIRouter(prefix="/cases", tags=["cases"])
+
+
+def _enqueue_capture(case_id: str) -> None:
+    """Indireção testável: envia a task para o broker."""
+    # Importação tardia para evitar dependência circular com hermes_worker em testes.
+    from celery import current_app
+
+    current_app.send_task("hermes.capture_case", args=[case_id])
 
 
 @router.get("", response_model=list[CaseRead])
@@ -50,6 +58,24 @@ async def get_case(
     if case is None or case.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return case
+
+
+@router.post("/{case_id}/capture", status_code=status.HTTP_202_ACCEPTED)
+async def trigger_capture(
+    case_id: uuid.UUID,
+    user_id: str = Depends(current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    case = await db.get(Case, case_id)
+    if case is None or case.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if case.status in (CaseStatus.capturing, CaseStatus.analyzing):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"caso já está em {case.status}",
+        )
+    _enqueue_capture(str(case.id))
+    return {"status": "enqueued", "case_id": str(case.id)}
 
 
 @router.delete("/{case_id}", status_code=status.HTTP_204_NO_CONTENT)

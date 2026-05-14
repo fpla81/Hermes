@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { listCases } from "@/lib/cases";
-import { deleteCaseAction } from "./actions";
+import { captureCaseAction, deleteCaseAction } from "./actions";
 
 export default async function CasesPage() {
   const cases = await listCases();
@@ -46,15 +46,28 @@ export default async function CasesPage() {
                     {new Date(c.created_at).toLocaleString("pt-BR")}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    <form action={deleteCaseAction}>
-                      <input type="hidden" name="id" value={c.id} />
-                      <button
-                        type="submit"
-                        className="text-xs text-muted-foreground hover:text-destructive"
-                      >
-                        Excluir
-                      </button>
-                    </form>
+                    <div className="flex justify-end gap-3">
+                      {c.status !== "capturing" && c.status !== "analyzing" && (
+                        <form action={captureCaseAction}>
+                          <input type="hidden" name="id" value={c.id} />
+                          <button
+                            type="submit"
+                            className="text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            Capturar
+                          </button>
+                        </form>
+                      )}
+                      <form action={deleteCaseAction}>
+                        <input type="hidden" name="id" value={c.id} />
+                        <button
+                          type="submit"
+                          className="text-xs text-muted-foreground hover:text-destructive"
+                        >
+                          Excluir
+                        </button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
               ))}

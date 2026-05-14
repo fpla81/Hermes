@@ -13,6 +13,8 @@ export interface Case {
   numero_processo: string;
   titulo: string | null;
   status: CaseStatus;
+  last_error: string | null;
+  captured_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -34,4 +36,9 @@ export async function createCase(input: {
 export async function deleteCase(id: string): Promise<void> {
   const res = await apiFetch(`/cases/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(`delete falhou: ${res.status}`);
+}
+
+export async function triggerCapture(id: string): Promise<void> {
+  const res = await apiFetch(`/cases/${id}/capture`, { method: "POST" });
+  if (!res.ok) throw new Error(`capture falhou: ${res.status}`);
 }

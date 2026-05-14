@@ -38,6 +38,16 @@ def test_validacao_numero_invalido(client) -> None:
     assert r.status_code == 422
 
 
+def test_capture_enqueues(client, mocker) -> None:
+    spy = mocker.patch("hermes_api.routes.cases._enqueue_capture")
+    created = client.post(
+        "/cases", json={"numero_processo": VALID}, headers=HEADERS
+    ).json()
+    r = client.post(f"/cases/{created['id']}/capture", headers=HEADERS)
+    assert r.status_code == 202
+    spy.assert_called_once_with(created["id"])
+
+
 def test_get_and_delete(client) -> None:
     created = client.post(
         "/cases", json={"numero_processo": VALID}, headers=HEADERS

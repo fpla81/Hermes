@@ -29,5 +29,7 @@ class CaseRead(BaseModel):
     numero_processo: str
     titulo: str | None
     status: CaseStatus
+    last_error: str | None = None
+    captured_at: datetime | None = None
     created_at: datetime
     updated_at: datetime

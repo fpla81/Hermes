@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Enum, String, Uuid, func
+from sqlalchemy import Enum, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..db import Base
@@ -33,6 +33,9 @@ class Case(Base):
         nullable=False,
         default=CaseStatus.draft,
     )
+    raw_html: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    captured_at: Mapped[datetime | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         nullable=False, server_default=func.now()
     )
