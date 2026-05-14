@@ -135,6 +135,8 @@ services:
       context: ..
       dockerfile: apps/playwright/Dockerfile
     env_file: ../.env
+    environment:
+      BEM_TE_VI_PROFILE_DIR: /app/bem_te_vi_profile
     ports:
       - "8001:8001"
     volumes:
