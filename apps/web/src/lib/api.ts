@@ -17,6 +17,7 @@ export async function apiFetch(
     throw new Error("HERMES_INTERNAL_SECRET não configurado");
   }
   const session = await auth();
+  console.log("[apiFetch] session:", JSON.stringify(session));
   const userKey = session?.user?.id ?? session?.user?.email;
   if (!userKey) {
     throw new ApiError(401, "Sessão ausente");
