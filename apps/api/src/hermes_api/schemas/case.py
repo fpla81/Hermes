@@ -6,20 +6,22 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ..models.case import CaseStatus
 
-PROCESSO_RE = re.compile(r"^\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}$")
+PROCESSO_RE = re.compile(r"^(\d{6,7})-(\d{2})\.(\d{4})\.(\d)\.(\d{2})\.(\d{4})$")
 
 
 class CaseCreate(BaseModel):
-    numero_processo: str = Field(..., min_length=20, max_length=64)
+    numero_processo: str = Field(..., min_length=19, max_length=64)
     titulo: str | None = Field(default=None, max_length=255)
 
     @field_validator("numero_processo")
     @classmethod
     def validar_numero(cls, v: str) -> str:
         v = v.strip()
-        if not PROCESSO_RE.match(v):
+        m = PROCESSO_RE.match(v)
+        if not m:
             raise ValueError("numero_processo deve seguir NNNNNNN-DD.AAAA.J.TR.OOOO")
-        return v
+        seq, dv, ano, justica, tribunal, origem = m.groups()
+        return f"{seq.zfill(7)}-{dv}.{ano}.{justica}.{tribunal}.{origem}"
 
 
 class CaseRead(BaseModel):
