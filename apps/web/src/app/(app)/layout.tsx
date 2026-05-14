@@ -1,9 +1,10 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { auth, signOut } from "@/lib/auth";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { FileText, BookOpen, ScrollText, Settings } from "lucide-react";
 
-const nav = [
+const nav: { href: Route; label: string; icon: typeof FileText }[] = [
   { href: "/cases", label: "Casos", icon: FileText },
   { href: "/fundamentos", label: "Fundamentos", icon: BookOpen },
   { href: "/templates", label: "Templates", icon: ScrollText },
