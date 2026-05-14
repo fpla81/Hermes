@@ -108,7 +108,7 @@ export default async function CaseDetailPage({
           <iframe
             src={`/cases/${c.id}/raw`}
             className="h-[600px] w-full rounded-md border bg-background"
-            sandbox=""
+            sandbox="allow-scripts"
             title="HTML capturado"
           />
         </section>
