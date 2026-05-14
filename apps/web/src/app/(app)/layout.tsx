@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Route } from "next";
+import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { FileText, BookOpen, ScrollText, Settings } from "lucide-react";
@@ -17,6 +18,9 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
+  if (!session?.user) {
+    redirect("/sign-in");
+  }
 
   return (
     <div className="flex min-h-screen">
