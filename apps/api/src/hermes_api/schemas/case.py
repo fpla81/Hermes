@@ -31,5 +31,7 @@ class CaseRead(BaseModel):
     status: CaseStatus
     last_error: str | None = None
     captured_at: datetime | None = None
+    analyzed_at: datetime | None = None
+    analysis_result: str | None = None
     created_at: datetime
     updated_at: datetime

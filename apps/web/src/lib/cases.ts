@@ -15,6 +15,8 @@ export interface Case {
   status: CaseStatus;
   last_error: string | null;
   captured_at: string | null;
+  analyzed_at: string | null;
+  analysis_result: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -52,4 +54,9 @@ export async function deleteCase(id: string): Promise<void> {
 export async function triggerCapture(id: string): Promise<void> {
   const res = await apiFetch(`/cases/${id}/capture`, { method: "POST" });
   if (!res.ok) throw new Error(`capture falhou: ${res.status}`);
+}
+
+export async function triggerAnalyze(id: string): Promise<void> {
+  const res = await apiFetch(`/cases/${id}/analyze`, { method: "POST" });
+  if (!res.ok) throw new Error(`analyze falhou: ${res.status}`);
 }

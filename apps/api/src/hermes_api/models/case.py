@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Enum, String, Text, Uuid, func
+from sqlalchemy import JSON, Enum, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..db import Base
@@ -35,8 +35,11 @@ class Case(Base):
     )
     raw_html: Mapped[str | None] = mapped_column(Text, nullable=True)
     artifact_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    analysis_result: Mapped[str | None] = mapped_column(Text, nullable=True)
+    anonymization_map: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     captured_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    analyzed_at: Mapped[datetime | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         nullable=False, server_default=func.now()
     )

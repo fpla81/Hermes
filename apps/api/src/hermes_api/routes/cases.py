@@ -22,6 +22,12 @@ def _enqueue_capture(case_id: str) -> None:
     current_app.send_task("hermes.capture_case", args=[case_id])
 
 
+def _enqueue_analyze(case_id: str) -> None:
+    from celery import current_app
+
+    current_app.send_task("hermes.analyze_case", args=[case_id])
+
+
 @router.get("", response_model=list[CaseRead])
 async def list_cases(
     user_id: str = Depends(current_user_id),
@@ -102,6 +108,29 @@ async def trigger_capture(
             detail=f"caso já está em {case.status}",
         )
     _enqueue_capture(str(case.id))
+    return {"status": "enqueued", "case_id": str(case.id)}
+
+
+@router.post("/{case_id}/analyze", status_code=status.HTTP_202_ACCEPTED)
+async def trigger_analyze(
+    case_id: uuid.UUID,
+    user_id: str = Depends(current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    case = await db.get(Case, case_id)
+    if case is None or case.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if case.status in (CaseStatus.capturing, CaseStatus.analyzing):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"caso já está em {case.status}",
+        )
+    if case.raw_html is None and case.artifact_key is None:
+        raise HTTPException(
+            status_code=status.HTTP_412_PRECONDITION_FAILED,
+            detail="capture primeiro antes de analisar",
+        )
+    _enqueue_analyze(str(case.id))
     return {"status": "enqueued", "case_id": str(case.id)}
 
 

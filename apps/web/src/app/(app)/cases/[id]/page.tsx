@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { getCase } from "@/lib/cases";
 
-import { captureCaseAction } from "../actions";
+import { analyzeCaseAction, captureCaseAction } from "../actions";
 import { CasePolling } from "./polling";
 
 interface Params {
@@ -57,7 +57,7 @@ export default async function CaseDetailPage({
         </div>
       )}
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {!isInFlight && (
           <form action={captureCaseAction}>
             <input type="hidden" name="id" value={c.id} />
@@ -71,7 +71,34 @@ export default async function CaseDetailPage({
             </button>
           </form>
         )}
+        {!isInFlight && (c.status === "captured" || c.status === "ready") && (
+          <form action={analyzeCaseAction}>
+            <input type="hidden" name="id" value={c.id} />
+            <button
+              type="submit"
+              className="inline-flex h-9 items-center rounded-md border bg-background px-3 text-sm font-medium hover:bg-accent"
+            >
+              {c.status === "ready" ? "Reanalisar" : "Analisar"}
+            </button>
+          </form>
+        )}
       </div>
+
+      {c.analysis_result && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-medium text-muted-foreground">
+            Análise
+            {c.analyzed_at && (
+              <span className="ml-2 font-normal">
+                ({new Date(c.analyzed_at).toLocaleString("pt-BR")})
+              </span>
+            )}
+          </h2>
+          <pre className="whitespace-pre-wrap rounded-md border bg-muted/30 p-4 text-sm">
+            {c.analysis_result}
+          </pre>
+        </section>
+      )}
 
       {c.captured_at && (
         <section className="space-y-2">

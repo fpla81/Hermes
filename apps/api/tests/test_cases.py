@@ -48,6 +48,15 @@ def test_capture_enqueues(client, mocker) -> None:
     spy.assert_called_once_with(created["id"])
 
 
+def test_analyze_requires_capture_first(client, mocker) -> None:
+    mocker.patch("hermes_api.routes.cases._enqueue_analyze")
+    created = client.post(
+        "/cases", json={"numero_processo": VALID}, headers=HEADERS
+    ).json()
+    r = client.post(f"/cases/{created['id']}/analyze", headers=HEADERS)
+    assert r.status_code == 412
+
+
 def test_get_and_delete(client) -> None:
     created = client.post(
         "/cases", json={"numero_processo": VALID}, headers=HEADERS

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { ApiError } from "@/lib/api";
-import { createCase, deleteCase, triggerCapture } from "@/lib/cases";
+import { createCase, deleteCase, triggerAnalyze, triggerCapture } from "@/lib/cases";
 
 export type CreateCaseState = {
   error?: string;
@@ -41,4 +41,13 @@ export async function captureCaseAction(formData: FormData): Promise<void> {
   if (!id) return;
   await triggerCapture(id);
   revalidatePath("/cases");
+  revalidatePath(`/cases/${id}`);
+}
+
+export async function analyzeCaseAction(formData: FormData): Promise<void> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  await triggerAnalyze(id);
+  revalidatePath("/cases");
+  revalidatePath(`/cases/${id}`);
 }
