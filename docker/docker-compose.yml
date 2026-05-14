@@ -50,6 +50,23 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+  migrate:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://hermes:hermes@postgres:5432/hermes
+      DATABASE_URL_SYNC: postgresql://hermes:hermes@postgres:5432/hermes
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../apps/api:/app/apps/api
+    working_dir: /app/apps/api
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    restart: "no"
+
   api:
     build:
       context: ..
@@ -62,11 +79,14 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
       CORS_ORIGINS: http://localhost:3000
+      PLAYWRIGHT_SERVICE_URL: http://playwright:8001
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "8000:8000"
     volumes:
@@ -80,12 +100,18 @@ services:
     env_file: ../.env
     environment:
       DATABASE_URL: postgresql+asyncpg://hermes:hermes@postgres:5432/hermes
+      DATABASE_URL_SYNC: postgresql://hermes:hermes@postgres:5432/hermes
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
+      PLAYWRIGHT_SERVICE_URL: http://playwright:8001
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     volumes:
       - ../apps/worker:/app/apps/worker
       - ../apps/api:/app/apps/api
@@ -112,6 +138,7 @@ services:
       SMTP_HOST: mailhog
       SMTP_PORT: "1025"
       API_BASE_URL: http://api:8000
+      HERMES_API_URL: http://api:8000
     depends_on:
       postgres:
         condition: service_healthy
