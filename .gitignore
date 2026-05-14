@@ -1,0 +1,48 @@
+# Node
+node_modules/
+.pnpm-store/
+.next/
+out/
+dist/
+.turbo/
+*.tsbuildinfo
+.eslintcache
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# uv
+.uv/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/settings.json.example
+
+# Test artifacts
+playwright-report/
+test-results/
+coverage/
+
+# Local data / persistent volumes
+bem_te_vi_profile/
+pg_data/
+minio_data/
+
+# Build artifacts
+apps/web/.next/
+apps/web/next-env.d.ts

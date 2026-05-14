@@ -1,0 +1,25 @@
+[project]
+name = "hermes-worker"
+version = "0.1.0"
+description = "Hermes Celery worker"
+requires-python = ">=3.12"
+dependencies = [
+    "celery[redis]>=5.4",
+    "hermes-api",
+    "pydantic-settings>=2.7",
+    "redis>=5.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hermes_worker"]

@@ -1,0 +1,17 @@
+{
+  "name": "@hermes/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "gen": "openapi-typescript ${API_OPENAPI_URL:-http://localhost:8000/openapi.json} -o ./src/api.ts",
+    "lint": "echo \"no lint\" && exit 0",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"no tests\" && exit 0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.4.4",
+    "typescript": "^5.7.2"
+  }
+}
