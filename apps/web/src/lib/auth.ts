@@ -9,10 +9,12 @@ import {
   sessions,
   verificationTokens,
 } from "@/db/schema";
+import { authConfig } from "./auth.config";
 
 const useResend = !!process.env.AUTH_RESEND_KEY;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,
@@ -20,7 +22,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     verificationTokensTable: verificationTokens,
   }),
   session: { strategy: "database" },
-  pages: { signIn: "/sign-in" },
   providers: [
     useResend
       ? Resend({
@@ -39,6 +40,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }),
   ],
   callbacks: {
+    ...authConfig.callbacks,
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
