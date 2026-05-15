@@ -26,11 +26,15 @@ Para cada recurso, devolva:
 - temas: lista de strings com os temas analisados (substantivo, ex.: "Horas extras", "Dano moral")
 - conclusao: "admitido" | "denegado" | "parcialmente_admitido" | "prejudicado" | "nao_conhecido"
 
+Além disso, devolva no nível raiz:
+- acordao_regional_data: data do acórdão regional (Recurso Ordinário) em formato dd/mm/aaaa quando mencionada no despacho; senão null. Importante para definir o marco legal do Recurso de Revista.
+
 Formato exato da resposta (apenas JSON, sem texto adicional):
 {
   "recursos": [
     {"tipo": "...", "parte": "...", "temas": ["..."], "conclusao": "..."}
-  ]
+  ],
+  "acordao_regional_data": "dd/mm/aaaa" | null
 }
 
 Despacho:
@@ -52,7 +56,12 @@ def _normalize_blueprint(raw: dict[str, Any]) -> dict[str, Any]:
             "temas": [str(t).strip() for t in (item.get("temas") or []) if str(t).strip()],
             "conclusao": str(item.get("conclusao", "")).strip().lower() or "",
         })
-    return {"recursos": cleaned}
+    acordao_data = raw.get("acordao_regional_data") if isinstance(raw, dict) else None
+    if isinstance(acordao_data, str):
+        acordao_data = acordao_data.strip() or None
+    else:
+        acordao_data = None
+    return {"recursos": cleaned, "acordao_regional_data": acordao_data}
 
 
 def _extract_json(text: str) -> dict[str, Any] | None:

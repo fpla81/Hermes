@@ -17,7 +17,8 @@ def test_normalizes_llm_response() -> None:
       "recursos": [
         {"tipo": "Recurso_Revista", "parte": "Reclamada", "temas": ["Horas extras"], "conclusao": "ADMITIDO"},
         {"tipo": "agravo_instrumento", "parte": "reclamante", "temas": [], "conclusao": "denegado"}
-      ]
+      ],
+      "acordao_regional_data": "15/06/2020"
     }"""
 
     class FakeProvider:
@@ -32,6 +33,19 @@ def test_normalizes_llm_response() -> None:
     assert result["recursos"][0]["parte"] == "reclamada"
     assert result["recursos"][0]["temas"] == ["Horas extras"]
     assert result["recursos"][0]["conclusao"] == "admitido"
+    assert result["acordao_regional_data"] == "15/06/2020"
+
+
+def test_acordao_data_missing_is_none() -> None:
+    fake_response = '{"recursos": [{"tipo": "recurso_revista", "parte": "reclamada", "temas": [], "conclusao": "admitido"}]}'
+
+    class FakeProvider:
+        def analyze(self, text: str) -> str:
+            return fake_response
+
+    with patch("hermes_api.services.despacho.get_llm_provider", return_value=FakeProvider()):
+        result = parse_despacho("x")
+    assert result["acordao_regional_data"] is None
 
 
 def test_handles_garbled_response() -> None:

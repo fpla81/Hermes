@@ -92,21 +92,15 @@ def analyze_case(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
             case.analysis_result = result
             case.anonymization_map = anon.mapping
             # dossiê estruturado (só faz sentido quando há peças estruturadas)
-            sp = case.structured_pieces
-            print(f"[hermes] structured_pieces type={type(sp).__name__} bool={bool(sp)} len={len(sp) if sp else 'n/a'}", flush=True)
-            if sp:
-                print(f"[hermes] iniciando dossiê com {len(sp)} peças", flush=True)
+            if case.structured_pieces:
                 anon_pieces = []
-                for i, p in enumerate(list(sp)):
-                    print(f"[hermes] anonimizando peça {i+1}/{len(sp)}", flush=True)
+                for p in list(case.structured_pieces):
                     pa = full_anonymize(str(p.get("text", "")))
                     anon_pieces.append({**p, "text": pa.text})
-                print("[hermes] chamando build_dossie", flush=True)
                 case.analysis_dossie = build_dossie(
                     anon_pieces,
                     case.despacho_blueprint,
                 )
-                print(f"[hermes] dossiê gerado: {len(case.analysis_dossie.get('recursos', []))} recursos", flush=True)
             case.analyzed_at = datetime.now(UTC)
             case.status = CaseStatus.ready
             session.commit()

@@ -35,32 +35,46 @@ PARTE_LABEL = {
 }
 
 
-PROMPT_TEMPLATE = """Você é assistente jurídico do TST. Receba o blueprint do despacho de admissibilidade (recursos esperados) e o texto rotulado das peças do processo. Produza um dossiê estruturado em JSON puro (sem markdown, sem ```) com, para cada recurso recursal listado nas peças:
+PROMPT_TEMPLATE = """Você é assistente jurídico do TST. Receba o blueprint do despacho de admissibilidade (recursos esperados) e o texto rotulado das peças do processo. Produza um dossiê estruturado em JSON puro (sem markdown, sem ```) que vai alimentar a geração da minuta.
+
+FORMATO OBRIGATÓRIO:
 
 {
   "recursos": [
     {
       "tipo": "recurso_revista" | "agravo_instrumento" | "agravo_interno",
-      "parte": "reclamante" | "reclamada" | ...,
+      "parte": "reclamante" | "reclamada" | "reclamantes" | "reclamadas" | "ministerio_publico" | "outro",
+      "marco_legal_hint": "13.015/2014" | "13.467/2017" | null,   // só se conseguir inferir da data do acórdão regional
       "temas": [
         {
-          "nome": "...",                      // ex.: "Horas extras", "Dano moral"
-          "fundamentos_argumentativos": ["..."],
-          "permissivos_invocados": ["..."],
-          "obices_aplicaveis": ["..."],       // Sumulas 126/296/297/333, art. 896 §1-A da CLT, etc.
-          "jurisprudencia_citada": ["..."],
-          "conclusao_sugerida": "conhecer e prover" | "conhecer e negar provimento" | "não conhecer" | "prejudicado" | "..."
+          "nome": "DESCRIÇÃO EM CAIXA ALTA - TERMOS SEPARADOS POR HÍFEN",  // ex.: "HORAS EXTRAS - DIVISOR APLICÁVEL"
+          "acordao_recorrido_resumo": "...",        // 1 parágrafo seguindo a fórmula "O Eg. TRT [negou/deu] provimento ao Recurso Ordinário [da/do] [Reclamada/Reclamante], ao fundamento de que ... Eis as razões de decidir:"
+          "acordao_recorrido_transcricao": "...",   // trecho LITERAL do acórdão regional no ponto, para citar
+          "embargos_resumo": "..." | null,          // se houver Embargos de Declaração no ponto
+          "embargos_transcricao": "..." | null,
+          "fundamentos_argumentativos": ["..."],    // alegações jurídicas/factuais da parte, em texto direto SEM bullets, prontos pra colar; verbos: alega, aduz, sustenta, argumenta
+          "permissivos_invocados": ["..."],         // arts/súmulas/OJs/precedentes invocados pela parte, AGRUPADOS POR DIPLOMA; ex.: "arts. 5º, II e LV, da Constituição; 832 da CLT"
+          "obices_aplicaveis": ["..."],             // ex.: "Súmula 126 do TST", "art. 896, § 1º-A, da CLT"
+          "jurisprudencia_citada": ["..."],         // precedentes vinculantes do STF/TST citados PELA PARTE (não os de fundamentação)
+          "conclusao_sugerida": "conhecer e dar provimento" | "conhecer e negar provimento" | "não conhecer" | "nego seguimento" | "dou provimento ao Agravo de Instrumento" | "prejudicado",
+          "analise_juridica": "..."                  // 1-2 parágrafos antecipando a análise para colar na minuta
         }
       ]
     }
   ],
-  "observacoes": "..." // notas relevantes sobre divergências ou dúvidas
+  "observacoes": "..."
 }
 
-Importante:
-- Use os temas listados no blueprint como referência mas não invente recursos que não estão nas peças.
-- Cite literalmente trechos curtos como fundamento, sem inventar.
-- Se a peça não trouxer informação suficiente para algum campo, devolva lista vazia.
+REGRAS ESTRITAS:
+
+1. NÃO MISTURE fundamentos argumentativos com permissivos. Fundamentos = razões jurídicas/factuais. Permissivos = dispositivos/súmulas/OJs invocados.
+2. Permissivos agrupados por diploma. Ex.: "arts. 5º, II e LV, e 7º, XXVI, da Constituição; 832 da CLT; 489, § 1º, do CPC".
+3. Ignore permissivos que aparecem APENAS em ementas/jurisprudência citada (não invocados diretamente pela parte como base recursal).
+4. Nomes processuais: "Eg. TRT", "TRT", "Corte Regional". NUNCA "Tribunal Regional" isolado.
+5. "Constituição da República" / "Constituição". NUNCA "Constituição Federal" nem "CF". Idem "Código Civil" (nunca "CC").
+6. Tema em caixa alta com " - " separando termos. NUNCA "TEMA Nº 1" ou ". ". Ex.: "DANO EXISTENCIAL - JORNADA EXTENUANTE".
+7. Use os temas do blueprint como referência. Não invente recursos/temas inexistentes nas peças.
+8. Se a data do acórdão regional não estiver clara, deixe marco_legal_hint=null.
 
 Blueprint do despacho:
 {blueprint}

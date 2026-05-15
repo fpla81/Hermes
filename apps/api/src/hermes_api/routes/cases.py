@@ -369,10 +369,14 @@ async def generate_minuta_draft(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
             detail="adicione peças antes de gerar minuta",
         )
+    acordao_data: str | None = None
+    if case.despacho_blueprint and isinstance(case.despacho_blueprint, dict):
+        acordao_data = case.despacho_blueprint.get("acordao_regional_data")
     draft = build_minuta_draft(
         case.numero_processo,
         pieces,
         case.analysis_dossie,
+        acordao_regional_data=acordao_data,
     )
     return {"text": draft}
 

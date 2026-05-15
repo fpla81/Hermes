@@ -22,14 +22,20 @@ def test_parses_llm_json(monkeypatch) -> None:
         {
           "tipo": "recurso_revista",
           "parte": "reclamada",
+          "marco_legal_hint": "13.467/2017",
           "temas": [
             {
-              "nome": "Horas extras",
-              "fundamentos_argumentativos": ["A"],
-              "permissivos_invocados": ["art. 7º XIII"],
-              "obices_aplicaveis": ["Súmula 126"],
+              "nome": "HORAS EXTRAS - INTERVALO INTRAJORNADA",
+              "acordao_recorrido_resumo": "O Eg. TRT negou provimento ao Recurso Ordinário da Reclamada...",
+              "acordao_recorrido_transcricao": "trecho literal",
+              "embargos_resumo": null,
+              "embargos_transcricao": null,
+              "fundamentos_argumentativos": ["A reforma trabalhista altera o regime"],
+              "permissivos_invocados": ["art. 71, § 4º, da CLT"],
+              "obices_aplicaveis": ["Súmula 126 do TST"],
               "jurisprudencia_citada": [],
-              "conclusao_sugerida": "não conhecer"
+              "conclusao_sugerida": "conhecer e dar provimento",
+              "analise_juridica": "Conheço do Recurso..."
             }
           ]
         }
@@ -48,5 +54,9 @@ def test_parses_llm_json(monkeypatch) -> None:
         )
 
     assert len(result["recursos"]) == 1
-    assert result["recursos"][0]["temas"][0]["nome"] == "Horas extras"
+    tema = result["recursos"][0]["temas"][0]
+    assert tema["nome"] == "HORAS EXTRAS - INTERVALO INTRAJORNADA"
+    assert tema["acordao_recorrido_resumo"].startswith("O Eg. TRT")
+    assert tema["acordao_recorrido_transcricao"] == "trecho literal"
+    assert tema["analise_juridica"].startswith("Conheço")
     assert result["observacoes"] == "OK"
