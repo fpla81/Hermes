@@ -11,6 +11,7 @@ import {
   deleteCase,
   deletePrepared,
   deleteStructuredPiece,
+  generateMinutaDraft,
   triggerAnalyze,
   triggerCapture,
   triggerDocx,
@@ -173,6 +174,44 @@ export async function triggerDocxAction(formData: FormData): Promise<void> {
   if (!id) return;
   await triggerDocx(id);
   revalidatePath(`/cases/${id}`);
+}
+
+export type MinutaDraftState = { error?: string; text?: string };
+
+export async function generateMinutaDraftAction(
+  _prev: MinutaDraftState,
+  formData: FormData,
+): Promise<MinutaDraftState> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "id ausente" };
+  try {
+    const { text } = await generateMinutaDraft(id);
+    return { text };
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 412) {
+      return { error: "Adicione peças antes de gerar minuta." };
+    }
+    return { error: e instanceof Error ? e.message : "erro" };
+  }
+}
+
+export type SaveMinutaState = { error?: string; ok?: boolean };
+
+export async function saveMinutaAction(
+  _prev: SaveMinutaState,
+  formData: FormData,
+): Promise<SaveMinutaState> {
+  const id = String(formData.get("id") ?? "");
+  const text = String(formData.get("text") ?? "");
+  if (!id) return { error: "id ausente" };
+  if (!text.trim()) return { error: "minuta vazia" };
+  try {
+    await uploadMinuta(id, text);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "erro" };
+  }
+  revalidatePath(`/cases/${id}`);
+  return { ok: true };
 }
 
 export type AddPieceState = { error?: string; ok?: boolean };

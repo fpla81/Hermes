@@ -4,6 +4,8 @@ import { getCase, listStructuredPieces } from "@/lib/cases";
 import type { DespachoBlueprint, StructuredPiece } from "@/lib/cases";
 
 import { analyzeCaseAction } from "../actions";
+import { DossiePanel } from "./dossie-panel";
+import { MinutaPanel } from "./minuta-panel";
 import { PiecesPanel } from "./pieces-panel";
 import { CasePolling } from "./polling";
 
@@ -81,28 +83,51 @@ export default async function CaseDetailPage({
 
       {pieces.length > 0 && (
         <section className="space-y-3 rounded-md border p-4">
-          <h2 className="text-sm font-medium">Análise (LLM)</h2>
-          <p className="text-xs text-muted-foreground">
-            Dispara anonimização + análise com Gemini sobre as peças adicionadas
-            (esta integração ainda usa o pipeline antigo e deve ser refeita para
-            ler structured_pieces).
-          </p>
-          <form action={analyzeCaseAction}>
-            <input type="hidden" name="id" value={c.id} />
-            <button
-              type="submit"
-              disabled={isInFlight}
-              className="inline-flex h-9 items-center rounded-md border bg-background px-3 text-sm font-medium hover:bg-accent disabled:opacity-50"
-            >
-              {c.status === "ready" ? "Reanalisar" : "Analisar"}
-            </button>
-          </form>
-          {c.analysis_result && (
+          <header className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-medium">Análise jurídica</h2>
+              <p className="text-xs text-muted-foreground">
+                Anonimiza as peças e gera um dossiê temático com fundamentos,
+                permissivos e óbices por recurso.
+              </p>
+            </div>
+            <form action={analyzeCaseAction}>
+              <input type="hidden" name="id" value={c.id} />
+              <button
+                type="submit"
+                disabled={isInFlight}
+                className="inline-flex h-9 items-center rounded-md border bg-background px-3 text-sm font-medium hover:bg-accent disabled:opacity-50"
+              >
+                {c.status === "ready" || c.analyzed_at ? "Reanalisar" : "Analisar"}
+              </button>
+            </form>
+          </header>
+          {c.analyzed_at && (
+            <p className="text-xs text-muted-foreground">
+              Última análise: {new Date(c.analyzed_at).toLocaleString("pt-BR")}
+            </p>
+          )}
+          {c.analysis_dossie ? (
+            <DossiePanel dossie={c.analysis_dossie} />
+          ) : c.analysis_result ? (
             <pre className="whitespace-pre-wrap rounded-md border bg-muted/30 p-3 text-sm">
               {c.analysis_result}
             </pre>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Ainda sem análise — clique em &quot;Analisar&quot;.
+            </p>
           )}
         </section>
+      )}
+
+      {pieces.length > 0 && (
+        <MinutaPanel
+          caseId={id}
+          initial={c.minuta_md ?? ""}
+          hasMinuta={c.has_minuta}
+          hasDocx={c.has_docx}
+        />
       )}
     </div>
   );

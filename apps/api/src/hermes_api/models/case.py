@@ -50,6 +50,7 @@ class Case(Base):
     docx_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     structured_pieces: Mapped[list | None] = mapped_column(JSON, nullable=True)
     despacho_blueprint: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    analysis_dossie: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     captured_at: Mapped[datetime | None] = mapped_column(nullable=True)
     analyzed_at: Mapped[datetime | None] = mapped_column(nullable=True)

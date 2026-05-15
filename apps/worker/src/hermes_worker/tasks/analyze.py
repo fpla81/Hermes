@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from hermes_api.db import SyncSessionLocal
 from hermes_api.llm import get_llm_provider
 from hermes_api.models.case import Case, CaseStatus
+from hermes_api.services.analysis_themed import build_dossie
 from hermes_api.services.anonymizer_llm import full_anonymize
 from hermes_api.storage import get_storage
 
@@ -90,6 +91,17 @@ def analyze_case(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
             result = provider.analyze(anon.text)
             case.analysis_result = result
             case.anonymization_map = anon.mapping
+            # dossiê estruturado (só faz sentido quando há peças estruturadas)
+            if case.structured_pieces:
+                # anonimiza cada peça individualmente pra preservar rótulos
+                anon_pieces = []
+                for p in list(case.structured_pieces):
+                    pa = full_anonymize(str(p.get("text", "")))
+                    anon_pieces.append({**p, "text": pa.text})
+                case.analysis_dossie = build_dossie(
+                    anon_pieces,
+                    case.despacho_blueprint,
+                )
             case.analyzed_at = datetime.now(UTC)
             case.status = CaseStatus.ready
             session.commit()

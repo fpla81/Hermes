@@ -12,6 +12,26 @@ export type CaseStatus =
   | "done"
   | "error";
 
+export interface AnalysisTema {
+  nome: string;
+  fundamentos_argumentativos: string[];
+  permissivos_invocados: string[];
+  obices_aplicaveis: string[];
+  jurisprudencia_citada: string[];
+  conclusao_sugerida: string;
+}
+
+export interface AnalysisRecurso {
+  tipo: string;
+  parte: string;
+  temas: AnalysisTema[];
+}
+
+export interface AnalysisDossie {
+  recursos: AnalysisRecurso[];
+  observacoes?: string;
+}
+
 export interface Case {
   id: string;
   numero_processo: string;
@@ -21,6 +41,8 @@ export interface Case {
   captured_at: string | null;
   analyzed_at: string | null;
   analysis_result: string | null;
+  analysis_dossie: AnalysisDossie | null;
+  minuta_md: string | null;
   has_manifest: boolean;
   has_packets: boolean;
   has_minuta: boolean;
@@ -130,6 +152,10 @@ export async function uploadMinuta(id: string, text: string): Promise<Case> {
     method: "POST",
     body: JSON.stringify({ text }),
   });
+}
+
+export async function generateMinutaDraft(id: string): Promise<{ text: string }> {
+  return apiJson<{ text: string }>(`/cases/${id}/minuta-draft`, { method: "POST" });
 }
 
 export async function triggerDocx(id: string): Promise<void> {

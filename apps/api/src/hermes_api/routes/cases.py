@@ -20,6 +20,7 @@ from ..schemas.case import (
 )
 from ..services.despacho import parse_despacho
 from ..services.manifest import build_manifest
+from ..services.minuta_draft import build_minuta_draft
 from ..services.prepared import (
     list_prepared_filenames,
     load_prepared_pieces,
@@ -348,6 +349,32 @@ async def get_packets(
         content=_json.dumps(case.packet_index, ensure_ascii=False),
         media_type="application/json",
     )
+
+
+@router.post("/{case_id}/minuta-draft")
+async def generate_minuta_draft(
+    case_id: uuid.UUID,
+    user_id: str = Depends(current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """Gera um rascunho de minuta a partir do dossiê + peças estruturadas.
+
+    Não salva — devolve o markdown no corpo da resposta para o usuário
+    revisar e depois POSTar em /minuta.
+    """
+    case = await _get_owned_case(case_id, user_id, db)
+    pieces = list(case.structured_pieces or [])
+    if not pieces:
+        raise HTTPException(
+            status_code=status.HTTP_412_PRECONDITION_FAILED,
+            detail="adicione peças antes de gerar minuta",
+        )
+    draft = build_minuta_draft(
+        case.numero_processo,
+        pieces,
+        case.analysis_dossie,
+    )
+    return {"text": draft}
 
 
 @router.post("/{case_id}/minuta", response_model=CaseRead)

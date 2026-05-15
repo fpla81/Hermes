@@ -35,6 +35,8 @@ class CaseRead(BaseModel):
     captured_at: datetime | None = None
     analyzed_at: datetime | None = None
     analysis_result: str | None = None
+    analysis_dossie: dict | None = None
+    minuta_md: str | None = None
     has_manifest: bool = False
     has_packets: bool = False
     has_minuta: bool = False
