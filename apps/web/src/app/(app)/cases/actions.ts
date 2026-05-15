@@ -5,10 +5,12 @@ import { redirect } from "next/navigation";
 
 import { ApiError } from "@/lib/api";
 import {
+  addStructuredPiece,
   buildManifest,
   createCase,
   deleteCase,
   deletePrepared,
+  deleteStructuredPiece,
   triggerAnalyze,
   triggerCapture,
   triggerDocx,
@@ -18,7 +20,7 @@ import {
   uploadPrepared,
   validateResources,
 } from "@/lib/cases";
-import type { PieceIn } from "@/lib/cases";
+import type { PieceIn, PieceParte, PieceTipo } from "@/lib/cases";
 
 export type CreateCaseState = {
   error?: string;
@@ -171,4 +173,39 @@ export async function triggerDocxAction(formData: FormData): Promise<void> {
   if (!id) return;
   await triggerDocx(id);
   revalidatePath(`/cases/${id}`);
+}
+
+export type AddPieceState = { error?: string; ok?: boolean };
+
+export async function addPieceAction(
+  _prev: AddPieceState,
+  formData: FormData,
+): Promise<AddPieceState> {
+  const caseId = String(formData.get("case_id") ?? "");
+  const tipo = String(formData.get("tipo") ?? "") as PieceTipo;
+  const parteRaw = String(formData.get("parte") ?? "");
+  const data = String(formData.get("data") ?? "").trim() || null;
+  const text = String(formData.get("text") ?? "");
+  if (!caseId) return { error: "case_id ausente" };
+  if (!tipo) return { error: "selecione um tipo" };
+  if (!text.trim()) return { error: "cole o texto da peça" };
+  if (tipo !== "despacho_admissibilidade" && !parteRaw) {
+    return { error: "selecione a parte recorrente" };
+  }
+  const parte = (parteRaw ? (parteRaw as PieceParte) : null);
+  try {
+    await addStructuredPiece(caseId, { tipo, parte, data, text });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "erro" };
+  }
+  revalidatePath(`/cases/${caseId}`);
+  return { ok: true };
+}
+
+export async function deletePieceAction(formData: FormData): Promise<void> {
+  const caseId = String(formData.get("case_id") ?? "");
+  const pieceId = String(formData.get("piece_id") ?? "");
+  if (!caseId || !pieceId) return;
+  await deleteStructuredPiece(caseId, pieceId);
+  revalidatePath(`/cases/${caseId}`);
 }

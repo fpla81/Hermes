@@ -63,3 +63,20 @@ class MinutaUpload(BaseModel):
 
 class PreparedListing(BaseModel):
     filenames: list[str]
+
+
+PieceTipo = str  # "despacho_admissibilidade" | "recurso_revista" | "agravo_instrumento" | "agravo_interno"
+PieceParte = str  # "reclamante" | "reclamada" | "reclamantes" | "reclamadas" | "ministerio_publico" | "outro"
+
+
+class StructuredPieceIn(BaseModel):
+    tipo: PieceTipo = Field(..., min_length=1)
+    parte: PieceParte | None = None
+    data: str | None = None
+    text: str = Field(..., min_length=1)
+
+
+class StructuredPiece(StructuredPieceIn):
+    id: str
+    created_at: datetime
+    blueprint: dict | None = None

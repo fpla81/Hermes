@@ -15,7 +15,10 @@ from ..schemas.case import (
     MinutaUpload,
     PiecesUpload,
     PreparedListing,
+    StructuredPiece,
+    StructuredPieceIn,
 )
+from ..services.despacho import parse_despacho
 from ..services.manifest import build_manifest
 from ..services.prepared import (
     list_prepared_filenames,
@@ -380,6 +383,63 @@ async def trigger_docx(
     await db.commit()
     _enqueue_render_docx(str(case.id))
     return {"status": "enqueued", "case_id": str(case.id)}
+
+
+@router.get("/{case_id}/structured-pieces", response_model=list[StructuredPiece])
+async def list_structured_pieces(
+    case_id: uuid.UUID,
+    user_id: str = Depends(current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    case = await _get_owned_case(case_id, user_id, db)
+    return case.structured_pieces or []
+
+
+@router.post("/{case_id}/structured-pieces", response_model=StructuredPiece)
+async def add_structured_piece(
+    case_id: uuid.UUID,
+    payload: StructuredPieceIn,
+    user_id: str = Depends(current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    case = await _get_owned_case(case_id, user_id, db)
+    import uuid as _uuid
+    from datetime import UTC, datetime
+
+    piece = payload.model_dump()
+    piece["id"] = str(_uuid.uuid4())
+    piece["created_at"] = datetime.now(UTC).isoformat()
+    piece["blueprint"] = None
+
+    if piece["tipo"] == "despacho_admissibilidade":
+        blueprint = parse_despacho(payload.text)
+        piece["blueprint"] = blueprint
+        case.despacho_blueprint = blueprint
+
+    existing = list(case.structured_pieces or [])
+    existing.append(piece)
+    case.structured_pieces = existing
+    await db.commit()
+    return piece
+
+
+@router.delete("/{case_id}/structured-pieces/{piece_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_structured_piece(
+    case_id: uuid.UUID,
+    piece_id: str,
+    user_id: str = Depends(current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    case = await _get_owned_case(case_id, user_id, db)
+    existing = list(case.structured_pieces or [])
+    remaining = [p for p in existing if p.get("id") != piece_id]
+    if len(remaining) == len(existing):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="peça não encontrada")
+    case.structured_pieces = remaining
+    # se removeu o despacho, limpa o blueprint
+    if not any(p.get("tipo") == "despacho_admissibilidade" for p in remaining):
+        case.despacho_blueprint = None
+    await db.commit()
 
 
 @router.get("/{case_id}/docx")

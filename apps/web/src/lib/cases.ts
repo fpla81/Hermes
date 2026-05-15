@@ -136,3 +136,71 @@ export async function triggerDocx(id: string): Promise<void> {
   const res = await apiFetch(`/cases/${id}/docx`, { method: "POST" });
   if (!res.ok) throw new Error(`docx falhou: ${res.status}`);
 }
+
+// -------- Structured pieces (add peça flow) --------
+
+export type PieceTipo =
+  | "despacho_admissibilidade"
+  | "recurso_revista"
+  | "agravo_instrumento"
+  | "agravo_interno";
+
+export type PieceParte =
+  | "reclamante"
+  | "reclamada"
+  | "reclamantes"
+  | "reclamadas"
+  | "ministerio_publico"
+  | "outro";
+
+export interface BlueprintRecurso {
+  tipo: string;
+  parte: string;
+  temas: string[];
+  conclusao: string;
+}
+
+export interface DespachoBlueprint {
+  recursos: BlueprintRecurso[];
+  note?: string;
+}
+
+export interface StructuredPiece {
+  id: string;
+  tipo: PieceTipo;
+  parte: PieceParte | null;
+  data: string | null;
+  text: string;
+  created_at: string;
+  blueprint: DespachoBlueprint | null;
+}
+
+export async function listStructuredPieces(caseId: string): Promise<StructuredPiece[]> {
+  return apiJson<StructuredPiece[]>(`/cases/${caseId}/structured-pieces`);
+}
+
+export async function addStructuredPiece(
+  caseId: string,
+  input: {
+    tipo: PieceTipo;
+    parte: PieceParte | null;
+    data: string | null;
+    text: string;
+  },
+): Promise<StructuredPiece> {
+  return apiJson<StructuredPiece>(`/cases/${caseId}/structured-pieces`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteStructuredPiece(
+  caseId: string,
+  pieceId: string,
+): Promise<void> {
+  const res = await apiFetch(
+    `/cases/${caseId}/structured-pieces/${pieceId}`,
+    { method: "DELETE" },
+  );
+  if (!res.ok) throw new Error(`delete falhou: ${res.status}`);
+}
