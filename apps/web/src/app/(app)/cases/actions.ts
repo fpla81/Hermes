@@ -61,12 +61,22 @@ export async function captureCaseAction(formData: FormData): Promise<void> {
   revalidatePath(`/cases/${id}`);
 }
 
-export async function analyzeCaseAction(formData: FormData): Promise<void> {
+export type AnalyzeState = { error?: string };
+
+export async function analyzeCaseAction(
+  _prev: AnalyzeState,
+  formData: FormData,
+): Promise<AnalyzeState> {
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
-  await triggerAnalyze(id);
+  if (!id) return { error: "id ausente" };
+  try {
+    await triggerAnalyze(id);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "erro" };
+  }
   revalidatePath("/cases");
   revalidatePath(`/cases/${id}`);
+  return {};
 }
 
 // -------- Fase B / C --------

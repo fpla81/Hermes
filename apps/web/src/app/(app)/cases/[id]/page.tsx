@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getCase, listStructuredPieces } from "@/lib/cases";
 import type { DespachoBlueprint, StructuredPiece } from "@/lib/cases";
 
-import { analyzeCaseAction } from "../actions";
+import { AnalyzeButton } from "./analyze-button";
 import { DossiePanel } from "./dossie-panel";
 import { MinutaPanel } from "./minuta-panel";
 import { PiecesPanel } from "./pieces-panel";
@@ -91,17 +91,18 @@ export default async function CaseDetailPage({
                 permissivos e óbices por recurso.
               </p>
             </div>
-            <form action={analyzeCaseAction}>
-              <input type="hidden" name="id" value={c.id} />
-              <button
-                type="submit"
-                disabled={isInFlight}
-                className="inline-flex h-9 items-center rounded-md border bg-background px-3 text-sm font-medium hover:bg-accent disabled:opacity-50"
-              >
-                {c.status === "ready" || c.analyzed_at ? "Reanalisar" : "Analisar"}
-              </button>
-            </form>
+            <AnalyzeButton
+              caseId={c.id}
+              alreadyAnalyzed={Boolean(c.analyzed_at) || c.status === "ready"}
+              inFlight={c.status === "analyzing"}
+              lastError={c.last_error}
+            />
           </header>
+          {c.status === "analyzing" && (
+            <p className="animate-pulse text-sm text-amber-600">
+              Examinando o processo… (pode levar alguns minutos)
+            </p>
+          )}
           {c.analyzed_at && (
             <p className="text-xs text-muted-foreground">
               Última análise: {new Date(c.analyzed_at).toLocaleString("pt-BR")}
