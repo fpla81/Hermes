@@ -65,7 +65,7 @@ class _GeminiAnonymizerProvider:
 
     BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
-    def __init__(self, api_key: str, model: str, timeout: float = 60.0) -> None:
+    def __init__(self, api_key: str, model: str, timeout: float = 120.0) -> None:
         self.api_key = api_key
         self.model = model
         self.timeout = timeout
