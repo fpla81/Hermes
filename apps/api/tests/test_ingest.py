@@ -95,6 +95,17 @@ def test_ingest_rejects_invalid_token(client) -> None:
     assert resp.status_code == 401
 
 
+def test_ingest_accepts_internal_session(client) -> None:
+    """Web→api passa X-Hermes-Secret + X-Hermes-User-Id em vez de Bearer."""
+    resp = client.post(
+        "/cases/ingest",
+        headers=HEADERS,
+        json={"numero_processo": "0001234-56.2023.5.06.0020", "html": SAMPLE_HTML},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["created"] is True
+
+
 def test_ingest_rejects_bad_cnj(client) -> None:
     token = make_token("user-1")
     resp = client.post(

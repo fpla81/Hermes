@@ -55,20 +55,36 @@ def _normalize_numero(value: str) -> str:
     return f"{seq.zfill(7)}-{dv}.{ano}.{justica}.{tribunal}.{origem}"
 
 
-def _bearer_user_id(authorization: str | None) -> str:
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Bearer token obrigatório",
-        )
-    token = authorization.split(None, 1)[1].strip()
-    user_id = verify_token(token)
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="token inválido",
-        )
-    return user_id
+def _resolve_user(
+    authorization: str | None,
+    x_hermes_secret: str | None,
+    x_hermes_user_id: str | None,
+) -> str:
+    """Aceita Bearer token (bookmarklet/externo) OU sessão interna web→api."""
+    from ..config import get_settings
+
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(None, 1)[1].strip()
+        user_id = verify_token(token)
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="token inválido",
+            )
+        return user_id
+
+    settings = get_settings()
+    if (
+        settings.internal_secret
+        and x_hermes_secret == settings.internal_secret
+        and x_hermes_user_id
+    ):
+        return x_hermes_user_id
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Bearer token ou sessão interna obrigatório",
+    )
 
 
 @router.get("/me/ingest-token", response_model=TokenResult)
@@ -80,9 +96,11 @@ async def get_my_token(user_id: str = Depends(current_user_id)) -> TokenResult:
 async def ingest_case_html(
     payload: IngestPayload,
     authorization: str | None = Header(default=None),
+    x_hermes_secret: str | None = Header(default=None),
+    x_hermes_user_id: str | None = Header(default=None),
     db: AsyncSession = Depends(get_db),
 ) -> IngestResult:
-    user_id = _bearer_user_id(authorization)
+    user_id = _resolve_user(authorization, x_hermes_secret, x_hermes_user_id)
     numero = _normalize_numero(payload.numero_processo)
 
     existing = await db.execute(
