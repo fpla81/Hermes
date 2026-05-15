@@ -146,6 +146,28 @@ Quando o dossiê contém AGRAVO DE INSTRUMENTO **e** RECURSO DE REVISTA DA MESMA
 
 - Múltiplas partes geram múltiplos cabeçalhos independentes. Ex.: AIRR Reclamada + RR Reclamada + AIRR Reclamante.
 
+# HIERARQUIA QUANDO HÁ AGRAVO INTERNO
+
+Quando o caso envolve **Agravo Interno** (peça do tipo `agravo_interno`), o relatório de cada tema deve trazer os recursos na seguinte ordem cronológica/lógica:
+
+1. Relatório do Recurso de Revista (alegações originais da parte recorrente).
+2. Relatório do Agravo de Instrumento, **se** estiver sendo examinado.
+3. Relatório do Agravo Interno.
+
+# FÓRMULAS DE ATALHO PARA REPETIÇÃO
+
+Avalie, comparando as alegações de cada recurso, se um recurso superior **essencialmente repete** as alegações já apresentadas. Se sim, **NÃO repita** o relatório completo: use a fórmula de atalho.
+
+- Se o Agravo de Instrumento limita-se a reiterar as alegações do Recurso de Revista, no lugar do relatório do AIRR, escrever apenas:
+  > Reitera as alegações no Agravo de Instrumento.
+
+- Se o Agravo Interno limita-se a reiterar as alegações dos recursos anteriores, no lugar do relatório do Agravo Interno, escrever:
+  > Reitera as alegações no Agravo de Instrumento e no presente Agravo Interno.
+
+Critério de "essencialmente reitera": os fundamentos argumentativos e permissivos são os mesmos. Diferenças apenas estilísticas, ou inclusão de uma alegação processual nova adicional, NÃO descaracterizam a reiteração — use a fórmula e adicione, em frase própria, apenas a alegação nova relevante.
+
+Se houver alegação juridicamente nova (não meramente formal), faça o relatório completo desse recurso.
+
 # ESTRUTURA POR TEMA (OBRIGATÓRIA, NESTA ORDEM)
 
 Para CADA tema, sob seu cabeçalho de recurso, escrever exatamente nesta sequência:
@@ -170,19 +192,27 @@ Relatório do acórdão dos EDs no ponto.
 (Se houver EDs) Transcrição LITERAL.
 
 [[CORPO]]
-(iii) Relatório do Recurso de Revista no ponto — fórmula:
+(iii) Relatório do Recurso de Revista no ponto — sempre presente quando houver RR ou Agravo Interno do RR no tema. Fórmula:
 "No Recurso de Revista, [a Reclamada/o Reclamante] alega que ... Aponta violação aos arts. ... Indica contrariedade à Súmula nº ..."
-
-Incluir o relatório do RR APENAS quando o tema está sob o cabeçalho do RR (foi admitido) OU quando há AIRR e o RR também atacou o ponto (para contextualizar).
 
 [[CORPO]]
 (iv) Relatório do Agravo de Instrumento no ponto — fórmula:
 "No Agravo de Instrumento, [a Reclamada/o Reclamante] sustenta que ... Aponta violação aos arts. ..."
 
-Incluir APENAS quando o tema está sob o cabeçalho do AIRR OU quando há AIRR e o tema é discutido também nele.
+OU, se o AIRR essencialmente reitera o RR:
+"Reitera as alegações no Agravo de Instrumento."
+
+Incluir quando o tema está sendo julgado em sede de AIRR (denegado pelo despacho) OU como parte da hierarquia quando há Agravo Interno.
 
 [[CORPO]]
-(v) Análise jurídica do tema, com conclusão (`conheço/não conheço`, `dou/nego provimento` para RR; `nego seguimento` ou `dou provimento ao Agravo de Instrumento` para AIRR).
+(v) Relatório do Agravo Interno no ponto, quando houver — fórmula:
+"No Agravo Interno, [a Reclamada/o Reclamante] argumenta que ... Aponta violação aos arts. ..."
+
+OU, se o Agravo Interno essencialmente reitera os recursos anteriores:
+"Reitera as alegações no Agravo de Instrumento e no presente Agravo Interno."
+
+[[CORPO]]
+(vi) Análise jurídica do tema, com conclusão na fórmula adequada (`conheço/não conheço`, `dou/nego provimento` para RR; `nego seguimento` ou `dou provimento ao Agravo de Instrumento` para AIRR; `dou/nego provimento ao Agravo Interno`).
 ```
 
 # FÓRMULAS BASE

@@ -59,6 +59,15 @@ def test_prompt_lists_all_markers() -> None:
         assert marker in PROMPT_TEMPLATE, f"marcador {marker} ausente do prompt"
 
 
+def test_prompt_contains_agravo_interno_hierarchy() -> None:
+    assert "HIERARQUIA QUANDO HÁ AGRAVO INTERNO" in PROMPT_TEMPLATE
+    assert "Reitera as alegações no Agravo de Instrumento." in PROMPT_TEMPLATE
+    assert (
+        "Reitera as alegações no Agravo de Instrumento e no presente Agravo Interno."
+        in PROMPT_TEMPLATE
+    )
+
+
 def test_compute_marco_legal_lei_13015() -> None:
     assert compute_marco_legal("01/01/2013") == (
         "INTERPOSTO ANTERIORMENTE À VIGÊNCIA DA LEI Nº 13.015/2014"
