@@ -74,7 +74,7 @@ def test_analyze_sem_captura_retorna_no_capture(sync_session) -> None:
         cid = str(c.id)
 
     result = analyze_case.run(cid)
-    assert result["status"] == "no_capture"
+    assert result["status"] == "no_input"
 
 
 def test_analyze_llm_erro_marca_caso_como_error(sync_session, mocker) -> None:
