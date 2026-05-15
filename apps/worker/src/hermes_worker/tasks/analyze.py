@@ -86,21 +86,28 @@ def analyze_case(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
         session.commit()
 
         try:
-            anon = full_anonymize(text)
-            provider = get_llm_provider()
-            result = provider.analyze(anon.text)
-            case.analysis_result = result
-            case.anonymization_map = anon.mapping
-            # dossiê estruturado (só faz sentido quando há peças estruturadas)
             if case.structured_pieces:
+                # Caminho novo: peças estruturadas → dossiê temático.
+                # Pula o anonymize+analyze do texto combinado (legado).
+                combined_map: dict[str, str] = {}
                 anon_pieces = []
                 for p in list(case.structured_pieces):
                     pa = full_anonymize(str(p.get("text", "")))
+                    combined_map.update(pa.mapping)
                     anon_pieces.append({**p, "text": pa.text})
                 case.analysis_dossie = build_dossie(
                     anon_pieces,
                     case.despacho_blueprint,
                 )
+                case.anonymization_map = combined_map
+                case.analysis_result = None
+            else:
+                # Caminho legado: HTML capturado → análise plana.
+                anon = full_anonymize(text)
+                provider = get_llm_provider()
+                result = provider.analyze(anon.text)
+                case.analysis_result = result
+                case.anonymization_map = anon.mapping
             case.analyzed_at = datetime.now(UTC)
             case.status = CaseStatus.ready
             session.commit()
