@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from . import __version__
 from .capture import Capturer, build_capturer
 from .extract import extract_pieces
+from .login_session import cancel_login, complete_login, list_sessions, start_login
 
 app = FastAPI(
     title="Hermes Playwright Service",
@@ -65,3 +66,39 @@ async def capture(
         ],
         pieces=pieces,
     )
+
+
+class LoginCompleteRequest(BaseModel):
+    session_id: str
+
+
+@app.post("/login/start")
+async def login_start() -> dict:
+    try:
+        return await start_login()
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+
+
+@app.post("/login/complete")
+async def login_complete(payload: LoginCompleteRequest) -> dict:
+    try:
+        return await complete_login(payload.session_id)
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"sessão {exc} não encontrada"
+        ) from exc
+
+
+@app.post("/login/cancel")
+async def login_cancel(payload: LoginCompleteRequest) -> dict[str, str]:
+    await cancel_login(payload.session_id)
+    return {"status": "cancelled"}
+
+
+@app.get("/login/status")
+async def login_status() -> dict:
+    return {"sessions": list_sessions()}

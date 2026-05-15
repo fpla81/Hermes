@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Template launchd para auto-iniciar o hermes-playwright no login do Mac.
+
+  Como usar:
+    1. Substitua {{HERMES_ROOT}} pelo caminho absoluto da raiz do repositório.
+    2. Salve em ~/Library/LaunchAgents/com.hermes.playwright.plist
+    3. launchctl load ~/Library/LaunchAgents/com.hermes.playwright.plist
+    4. launchctl start com.hermes.playwright
+
+  Pra desligar:
+    launchctl unload ~/Library/LaunchAgents/com.hermes.playwright.plist
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.hermes.playwright</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>{{HERMES_ROOT}}/scripts/playwright-host.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>{{HERMES_ROOT}}</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>{{HERMES_ROOT}}/.logs/playwright.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>{{HERMES_ROOT}}/.logs/playwright.err.log</string>
+</dict>
+</plist>

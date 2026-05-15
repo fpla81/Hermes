@@ -1,10 +1,22 @@
-export default function SettingsPage() {
+import { listBemTeViSessions } from "@/lib/bemtevi";
+
+import { BemTeViLoginPanel } from "./bemtevi-login";
+
+async function getActiveSessionId(): Promise<string | null> {
+  try {
+    const { sessions } = await listBemTeViSessions();
+    return sessions[0]?.session_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export default async function SettingsPage() {
+  const activeSessionId = await getActiveSessionId();
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-      <p className="text-muted-foreground">
-        BYOK do Gemini, sessão Bem-te-vi, perfil. Fase 7.
-      </p>
+      <BemTeViLoginPanel activeSessionId={activeSessionId} />
     </div>
   );
 }

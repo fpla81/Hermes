@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     )
     headless: bool = Field(default=True, validation_alias="BEMTEVI_HEADLESS")
     nav_timeout_ms: int = Field(default=30_000, validation_alias="BEMTEVI_NAV_TIMEOUT")
+    login_url: str = Field(
+        default="https://bemtevi.tst.jus.br/",
+        validation_alias="BEMTEVI_LOGIN_URL",
+    )
 
 
 @lru_cache
