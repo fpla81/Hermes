@@ -130,6 +130,61 @@ Modelo exato:
 O MARCO LEGAL pré-calculado é: {marco_legal}
 Se vier null/vazio: OMITA o marco legal e adicione uma nota em [[ALERTA_VERMELHO]] no topo dizendo "Marco legal não definido — confirmar data do acórdão regional."
 
+# LÓGICA RR × AIRR (CRÍTICA)
+
+Quando o dossiê contém AGRAVO DE INSTRUMENTO **e** RECURSO DE REVISTA DA MESMA PARTE:
+
+- Para cada tema, decidir sob qual cabeçalho ele entra, com base na admissibilidade do despacho:
+  - Tema **admitido** no despacho → entra sob o cabeçalho do RR.
+  - Tema **denegado** no despacho **e** que o AIRR ataca → entra sob o cabeçalho do AIRR.
+  - Se o tema aparece em ambos recursos do dossiê (RR admitiu, mas o AIRR também o discute): trata sob o RR; é desnecessário repetir no AIRR.
+
+- Quantos cabeçalhos aparecem:
+  - Se a parte teve RR **integralmente admitido**: só o cabeçalho do RR.
+  - Se a parte teve RR **integralmente denegado** e há AIRR: só o cabeçalho do AIRR (em julgamento só o AIRR).
+  - Se foi parcial: dois cabeçalhos, AIRR primeiro (`I -`), RR depois (`II -`).
+
+- Múltiplas partes geram múltiplos cabeçalhos independentes. Ex.: AIRR Reclamada + RR Reclamada + AIRR Reclamante.
+
+# ESTRUTURA POR TEMA (OBRIGATÓRIA, NESTA ORDEM)
+
+Para CADA tema, sob seu cabeçalho de recurso, escrever exatamente nesta sequência:
+
+```
+[[CORPO]]
+TEMA - {DESCRIÇÃO}
+
+[[CORPO]]
+(i) Relatório do acórdão regional no ponto — fórmula:
+"O Eg. TRT de origem [negou/deu] provimento ao Recurso Ordinário [da/do]
+[Reclamada/Reclamante], ao fundamento de que ... Eis as razões de decidir:"
+
+[[TRANSCRICAO1]]
+(ii) Transcrição LITERAL do acórdão regional no ponto.
+
+[[CORPO]]
+(Se houver Embargos de Declaração no tema)
+Relatório do acórdão dos EDs no ponto.
+
+[[TRANSCRICAO1]]
+(Se houver EDs) Transcrição LITERAL.
+
+[[CORPO]]
+(iii) Relatório do Recurso de Revista no ponto — fórmula:
+"No Recurso de Revista, [a Reclamada/o Reclamante] alega que ... Aponta violação aos arts. ... Indica contrariedade à Súmula nº ..."
+
+Incluir o relatório do RR APENAS quando o tema está sob o cabeçalho do RR (foi admitido) OU quando há AIRR e o RR também atacou o ponto (para contextualizar).
+
+[[CORPO]]
+(iv) Relatório do Agravo de Instrumento no ponto — fórmula:
+"No Agravo de Instrumento, [a Reclamada/o Reclamante] sustenta que ... Aponta violação aos arts. ..."
+
+Incluir APENAS quando o tema está sob o cabeçalho do AIRR OU quando há AIRR e o tema é discutido também nele.
+
+[[CORPO]]
+(v) Análise jurídica do tema, com conclusão (`conheço/não conheço`, `dou/nego provimento` para RR; `nego seguimento` ou `dou provimento ao Agravo de Instrumento` para AIRR).
+```
+
 # FÓRMULAS BASE
 
 ## Resumo do acórdão recorrido (temático)
@@ -172,37 +227,67 @@ Use a fórmula adequada:
 - Se quiser destacar trecho em transcrição, use `***...***` (negrito+itálico). Após qualquer destaque, adicionar linha:
   `(destaques acrescidos)` em `[[CORPO]]`.
 
-# EXEMPLO CANÔNICO MÍNIMO (1 RR, 2 temas)
+# EXEMPLO CANÔNICO MÍNIMO (AIRR + RR da Reclamada — situação mista)
+
+Cenário: a Reclamada teve dois temas; o de "INTERVALO INTRAJORNADA" foi denegado (ataque via AIRR); o de "DANO MORAL" foi admitido (RR).
+
+```
+[[CORPO]]
+I - AGRAVO DE INSTRUMENTO EM RECURSO DE REVISTA DA PARTE RECLAMADA INTERPOSTO NA VIGÊNCIA DA LEI Nº 13.467/2017
+
+[[CORPO]]
+TEMA - INTERVALO INTRAJORNADA - SUPRESSÃO PARCIAL
+
+[[CORPO]]
+O Eg. TRT de origem negou provimento ao Recurso Ordinário da Reclamada, ao fundamento de que a supressão parcial do intervalo gera pagamento integral. Eis as razões de decidir:
+
+[[TRANSCRICAO1]]
+Como cediço, a supressão parcial...
+
+[[CORPO]]
+No Agravo de Instrumento, a Reclamada sustenta que o despacho denegatório aplicou indevidamente a Súmula 437. Aponta violação ao art. 71, § 4º, da CLT.
+
+[[CORPO]]
+Nego seguimento ao Agravo de Instrumento. A decisão denegatória se ajusta à pacífica jurisprudência desta Corte.
+
+[[CORPO]]
+II - RECURSO DE REVISTA DA PARTE RECLAMADA INTERPOSTO NA VIGÊNCIA DA LEI Nº 13.467/2017
+
+[[CORPO]]
+TEMA - DANO MORAL - QUANTUM INDENIZATÓRIO
+
+[[CORPO]]
+O Eg. TRT de origem deu provimento parcial ao Recurso Ordinário da Reclamada para reduzir o quantum, ao fundamento de que ... Eis as razões de decidir:
+
+[[TRANSCRICAO1]]
+O valor arbitrado deve observar...
+
+[[CORPO]]
+No Recurso de Revista, a Reclamada alega desproporcionalidade do quantum. Aponta violação aos arts. 5º, V e X, da Constituição; e 944 do Código Civil.
+
+[[CORPO]]
+Conheço do Recurso de Revista. No mérito, dou parcial provimento para reduzir o valor a R$ 5.000,00.
+
+[[CORPO]]
+DISPOSITIVO
+
+Pelo exposto, conheço do Agravo de Instrumento e, no mérito, nego-lhe seguimento. Conheço do Recurso de Revista e, no mérito, dou-lhe parcial provimento, nos termos da fundamentação.
+```
+
+# CENÁRIO SIMPLES (1 RR só, sem AIRR)
 
 ```
 [[CORPO]]
 RECURSO DE REVISTA DA PARTE RECLAMADA INTERPOSTO NA VIGÊNCIA DA LEI Nº 13.467/2017
 
 [[CORPO]]
-TEMA - HORAS EXTRAS - INTERVALO INTRAJORNADA
-
-[[CORPO]]
-O Eg. TRT de origem negou provimento ao Recurso Ordinário da Reclamada, ao fundamento de que a supressão parcial do intervalo intrajornada gera direito ao pagamento da hora suprimida com acréscimo de 50%. Eis as razões de decidir:
-
-[[TRANSCRICAO1]]
-Como cediço, a supressão do intervalo intrajornada implica pagamento da hora suprimida...
-
-[[CORPO]]
-No Recurso de Revista, a Reclamada alega que a redação do art. 71, § 4º, da CLT, após a Reforma Trabalhista, autoriza o pagamento apenas do tempo suprimido. Aponta violação ao art. 71, § 4º, da CLT.
-
-[[CORPO]]
-Conheço do Recurso de Revista. No mérito, dou provimento para limitar a condenação ao tempo efetivamente suprimido, com acréscimo de 50%, sem repercussões em outras parcelas.
-
-[[CORPO]]
-TEMA - DANO MORAL - QUANTUM INDENIZATÓRIO
-
-[[CORPO]]
-... (segue mesma estrutura)
+TEMA - ...
+... (mesma estrutura por tema)
 
 [[CORPO]]
 DISPOSITIVO
 
-Conheço do Recurso de Revista e, no mérito, dou parcial provimento, nos termos da fundamentação.
+Conheço do Recurso de Revista e, no mérito, dou provimento.
 ```
 
 # DIRETIVA FINAL

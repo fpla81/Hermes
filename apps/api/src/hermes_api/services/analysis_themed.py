@@ -48,6 +48,7 @@ FORMATO OBRIGATÓRIO:
       "temas": [
         {
           "nome": "DESCRIÇÃO EM CAIXA ALTA - TERMOS SEPARADOS POR HÍFEN",  // ex.: "HORAS EXTRAS - DIVISOR APLICÁVEL"
+          "admissibilidade": "admitido" | "denegado" | "parcialmente_admitido" | "prejudicado" | "nao_conhecido",  // SEGUIR o blueprint do despacho. Para AIRR, indicar a situação do RR que ele ataca.
           "acordao_recorrido_resumo": "...",        // 1 parágrafo seguindo a fórmula "O Eg. TRT [negou/deu] provimento ao Recurso Ordinário [da/do] [Reclamada/Reclamante], ao fundamento de que ... Eis as razões de decidir:"
           "acordao_recorrido_transcricao": "...",   // trecho LITERAL do acórdão regional no ponto, para citar
           "embargos_resumo": "..." | null,          // se houver Embargos de Declaração no ponto

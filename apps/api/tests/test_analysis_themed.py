@@ -26,6 +26,7 @@ def test_parses_llm_json(monkeypatch) -> None:
           "temas": [
             {
               "nome": "HORAS EXTRAS - INTERVALO INTRAJORNADA",
+              "admissibilidade": "admitido",
               "acordao_recorrido_resumo": "O Eg. TRT negou provimento ao Recurso Ordinário da Reclamada...",
               "acordao_recorrido_transcricao": "trecho literal",
               "embargos_resumo": null,
