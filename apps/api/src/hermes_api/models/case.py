@@ -12,8 +12,12 @@ class CaseStatus(enum.StrEnum):
     draft = "draft"
     capturing = "capturing"
     captured = "captured"
+    preparing = "preparing"
     analyzing = "analyzing"
     ready = "ready"
+    packaging = "packaging"
+    rendering = "rendering"
+    done = "done"
     error = "error"
 
 
@@ -37,6 +41,13 @@ class Case(Base):
     artifact_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     analysis_result: Mapped[str | None] = mapped_column(Text, nullable=True)
     anonymization_map: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    pieces_json: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    manifest: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    resource_validation: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    packet_index: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    packets_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    minuta_md: Mapped[str | None] = mapped_column(Text, nullable=True)
+    docx_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     captured_at: Mapped[datetime | None] = mapped_column(nullable=True)
     analyzed_at: Mapped[datetime | None] = mapped_column(nullable=True)
@@ -46,3 +57,19 @@ class Case(Base):
     updated_at: Mapped[datetime] = mapped_column(
         nullable=False, server_default=func.now(), onupdate=func.now()
     )
+
+    @property
+    def has_manifest(self) -> bool:
+        return self.manifest is not None
+
+    @property
+    def has_packets(self) -> bool:
+        return self.packets_key is not None
+
+    @property
+    def has_minuta(self) -> bool:
+        return self.minuta_md is not None
+
+    @property
+    def has_docx(self) -> bool:
+        return self.docx_key is not None

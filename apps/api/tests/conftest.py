@@ -14,6 +14,25 @@ from sqlalchemy.ext.asyncio import (
 )
 
 
+class FakeStorage:
+    """Stub in-memory de S3Storage para os testes."""
+
+    def __init__(self) -> None:
+        self.objects: dict[str, bytes] = {}
+
+    def put_bytes(self, key: str, data: bytes, content_type: str) -> None:
+        self.objects[key] = data
+
+    def get_bytes(self, key: str) -> bytes:
+        return self.objects[key]
+
+    def list_keys(self, prefix: str) -> list[str]:
+        return sorted(k for k in self.objects if k.startswith(prefix))
+
+    def delete_key(self, key: str) -> None:
+        self.objects.pop(key, None)
+
+
 @pytest_asyncio.fixture
 async def engine() -> AsyncIterator:
     eng = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
@@ -44,3 +63,15 @@ def client(session_factory, monkeypatch) -> Iterator[TestClient]:
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def fake_storage(monkeypatch) -> FakeStorage:
+    """Substitui get_storage() pelo FakeStorage em todos os módulos que o importam."""
+    storage = FakeStorage()
+    from hermes_api import storage as storage_module
+    from hermes_api.routes import cases as cases_module
+
+    monkeypatch.setattr(storage_module, "get_storage", lambda: storage)
+    monkeypatch.setattr(cases_module, "get_storage", lambda: storage)
+    return storage

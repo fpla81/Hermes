@@ -35,5 +35,31 @@ class CaseRead(BaseModel):
     captured_at: datetime | None = None
     analyzed_at: datetime | None = None
     analysis_result: str | None = None
+    has_manifest: bool = False
+    has_packets: bool = False
+    has_minuta: bool = False
+    has_docx: bool = False
     created_at: datetime
     updated_at: datetime
+
+
+class PieceIn(BaseModel):
+    tipo: str | None = None
+    data: str | None = None
+    html_url: str | None = None
+    bin_url: str | None = None
+    id: str | None = None
+    local_path: str | None = None
+    model_config = ConfigDict(extra="allow")
+
+
+class PiecesUpload(BaseModel):
+    pieces: list[PieceIn]
+
+
+class MinutaUpload(BaseModel):
+    text: str = Field(..., min_length=1)
+
+
+class PreparedListing(BaseModel):
+    filenames: list[str]

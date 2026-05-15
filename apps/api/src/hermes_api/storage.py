@@ -45,6 +45,17 @@ class S3Storage:
         finally:
             body.close()
 
+    def list_keys(self, prefix: str) -> list[str]:
+        paginator = self.client.get_paginator("list_objects_v2")
+        out: list[str] = []
+        for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
+            for obj in page.get("Contents", []) or []:
+                out.append(obj["Key"])
+        return out
+
+    def delete_key(self, key: str) -> None:
+        self.client.delete_object(Bucket=self.bucket, Key=key)
+
 
 @lru_cache
 def get_storage() -> S3Storage | None:
