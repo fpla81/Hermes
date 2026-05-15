@@ -6,7 +6,6 @@ import { getCase, listPrepared } from "@/lib/cases";
 import {
   analyzeCaseAction,
   buildManifestAction,
-  captureCaseAction,
   deletePreparedAction,
   triggerDocxAction,
   triggerPacketsAction,
@@ -99,19 +98,13 @@ export default async function CaseDetailPage({
       )}
 
       <section className="space-y-3 rounded-md border p-4">
-        <h2 className="text-sm font-medium">1. Captura</h2>
+        <h2 className="text-sm font-medium">1. Importar do Bem-te-vi</h2>
+        <p className="text-xs text-muted-foreground">
+          {c.captured_at
+            ? `Importado em ${new Date(c.captured_at).toLocaleString("pt-BR")}. Para atualizar, abra a página "Peças" no Bem-te-vi e clique o bookmarklet "Enviar pro Hermes".`
+            : "Abra a página \"Peças\" do processo no Bem-te-vi e clique o bookmarklet \"Enviar pro Hermes\" (configurado em /settings)."}
+        </p>
         <div className="flex flex-wrap gap-2">
-          {!isInFlight && (
-            <form action={captureCaseAction}>
-              <input type="hidden" name="id" value={c.id} />
-              <button
-                type="submit"
-                className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                {c.captured_at ? "Recapturar" : "Capturar"}
-              </button>
-            </form>
-          )}
           {!isInFlight && (c.status === "captured" || c.status === "ready") && (
             <form action={analyzeCaseAction}>
               <input type="hidden" name="id" value={c.id} />
@@ -123,6 +116,12 @@ export default async function CaseDetailPage({
               </button>
             </form>
           )}
+          <a
+            href="/settings"
+            className="inline-flex h-9 items-center rounded-md border bg-background px-3 text-sm font-medium hover:bg-accent"
+          >
+            Bookmarklet
+          </a>
         </div>
       </section>
 

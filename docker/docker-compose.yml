@@ -130,7 +130,11 @@ services:
       - ../apps/worker:/app/apps/worker
       - ../apps/api:/app/apps/api
 
+  # Serviço playwright legado — não sobe por padrão. O fluxo atual usa o
+  # bookmarklet em /settings (sem captura controlada pelo servidor).
+  # Para reativar: `docker compose --profile legacy up playwright`.
   playwright:
+    profiles: ["legacy"]
     build:
       context: ..
       dockerfile: apps/playwright/Dockerfile
