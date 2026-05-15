@@ -34,6 +34,7 @@ def capture_case(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
             r.raise_for_status()
             data = r.json()
             html: str = data["html"]
+            pieces = data.get("pieces") or []
             storage = get_storage()
             if storage is not None:
                 key = f"cases/{case_id}/raw.html"
@@ -44,6 +45,8 @@ def capture_case(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
                 case.raw_html = None
             else:
                 case.raw_html = html
+            if pieces:
+                case.pieces_json = pieces
             case.captured_at = datetime.now(UTC)
             case.status = CaseStatus.captured
             session.commit()

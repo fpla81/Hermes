@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from . import __version__
 from .capture import Capturer, build_capturer
+from .extract import extract_pieces
 
 app = FastAPI(
     title="Hermes Playwright Service",
@@ -30,6 +31,7 @@ class CaptureResponse(BaseModel):
     captured_at: str
     html: str
     documentos: list[CapturedDocumentOut]
+    pieces: list[dict] = Field(default_factory=list)
 
 
 def get_capturer() -> Capturer:
@@ -53,6 +55,7 @@ async def capture(
             detail="numero_processo inválido",
         )
     data = await capturer.capture(payload.numero_processo)
+    pieces = extract_pieces(data.html)
     return CaptureResponse(
         numero_processo=data.numero_processo,
         captured_at=data.captured_at.isoformat(),
@@ -60,4 +63,5 @@ async def capture(
         documentos=[
             CapturedDocumentOut(titulo=d.titulo, data=d.data) for d in data.documentos
         ],
+        pieces=pieces,
     )

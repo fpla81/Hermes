@@ -4,7 +4,21 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { ApiError } from "@/lib/api";
-import { createCase, deleteCase, triggerAnalyze, triggerCapture } from "@/lib/cases";
+import {
+  buildManifest,
+  createCase,
+  deleteCase,
+  deletePrepared,
+  triggerAnalyze,
+  triggerCapture,
+  triggerDocx,
+  triggerPackets,
+  uploadMinuta,
+  uploadPieces,
+  uploadPrepared,
+  validateResources,
+} from "@/lib/cases";
+import type { PieceIn } from "@/lib/cases";
 
 export type CreateCaseState = {
   error?: string;
@@ -49,5 +63,112 @@ export async function analyzeCaseAction(formData: FormData): Promise<void> {
   if (!id) return;
   await triggerAnalyze(id);
   revalidatePath("/cases");
+  revalidatePath(`/cases/${id}`);
+}
+
+// -------- Fase B / C --------
+
+export type UploadPiecesState = { error?: string; ok?: boolean };
+
+export async function uploadPiecesAction(
+  _prev: UploadPiecesState,
+  formData: FormData,
+): Promise<UploadPiecesState> {
+  const id = String(formData.get("id") ?? "");
+  const json = String(formData.get("pieces_json") ?? "").trim();
+  if (!id) return { error: "id ausente" };
+  if (!json) return { error: "cole o pieces.json antes de enviar" };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(json);
+  } catch (e) {
+    return { error: `JSON inválido: ${e instanceof Error ? e.message : "erro"}` };
+  }
+  const pieces = Array.isArray(parsed) ? parsed : (parsed as { pieces?: PieceIn[] })?.pieces;
+  if (!Array.isArray(pieces)) {
+    return { error: "esperado array de peças ou objeto { pieces: [...] }" };
+  }
+  try {
+    await uploadPieces(id, pieces as PieceIn[]);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "erro" };
+  }
+  revalidatePath(`/cases/${id}`);
+  return { ok: true };
+}
+
+export async function buildManifestAction(formData: FormData): Promise<void> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  await buildManifest(id);
+  revalidatePath(`/cases/${id}`);
+}
+
+export type UploadPreparedState = { error?: string; ok?: boolean };
+
+export async function uploadPreparedAction(
+  _prev: UploadPreparedState,
+  formData: FormData,
+): Promise<UploadPreparedState> {
+  const id = String(formData.get("id") ?? "");
+  const file = formData.get("file");
+  if (!id) return { error: "id ausente" };
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "selecione um arquivo" };
+  }
+  try {
+    await uploadPrepared(id, file);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "erro" };
+  }
+  revalidatePath(`/cases/${id}`);
+  return { ok: true };
+}
+
+export async function deletePreparedAction(formData: FormData): Promise<void> {
+  const id = String(formData.get("id") ?? "");
+  const filename = String(formData.get("filename") ?? "");
+  if (!id || !filename) return;
+  await deletePrepared(id, filename);
+  revalidatePath(`/cases/${id}`);
+}
+
+export async function validateResourcesAction(formData: FormData): Promise<void> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  await validateResources(id);
+  revalidatePath(`/cases/${id}`);
+}
+
+export async function triggerPacketsAction(formData: FormData): Promise<void> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  await triggerPackets(id);
+  revalidatePath(`/cases/${id}`);
+}
+
+export type UploadMinutaState = { error?: string; ok?: boolean };
+
+export async function uploadMinutaAction(
+  _prev: UploadMinutaState,
+  formData: FormData,
+): Promise<UploadMinutaState> {
+  const id = String(formData.get("id") ?? "");
+  const text = String(formData.get("text") ?? "");
+  if (!id) return { error: "id ausente" };
+  if (!text.trim()) return { error: "minuta vazia" };
+  try {
+    await uploadMinuta(id, text);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "erro" };
+  }
+  revalidatePath(`/cases/${id}`);
+  return { ok: true };
+}
+
+export async function triggerDocxAction(formData: FormData): Promise<void> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  await triggerDocx(id);
   revalidatePath(`/cases/${id}`);
 }
