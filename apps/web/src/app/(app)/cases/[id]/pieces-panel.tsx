@@ -9,6 +9,8 @@ import { addPieceAction, deletePieceAction, type AddPieceState } from "../action
 const INITIAL: AddPieceState = {};
 
 const TIPO_LABEL: Record<string, string> = {
+  acordao_regional: "Acórdão Regional",
+  acordao_embargos_declaracao: "Acórdão de Embargos de Declaração",
   despacho_admissibilidade: "Despacho de Admissibilidade",
   recurso_revista: "Recurso de Revista",
   agravo_instrumento: "Agravo de Instrumento",
@@ -84,10 +86,16 @@ function PieceCard({ caseId, piece }: { caseId: string; piece: StructuredPiece }
   );
 }
 
+const TIPOS_SEM_PARTE = new Set([
+  "acordao_regional",
+  "acordao_embargos_declaracao",
+  "despacho_admissibilidade",
+]);
+
 function AddPieceForm({ caseId }: { caseId: string }) {
   const [state, formAction, pending] = useActionState(addPieceAction, INITIAL);
-  const [tipo, setTipo] = useState<string>("recurso_revista");
-  const requiresParte = tipo !== "despacho_admissibilidade";
+  const [tipo, setTipo] = useState<string>("acordao_regional");
+  const requiresParte = !TIPOS_SEM_PARTE.has(tipo);
 
   return (
     <form action={formAction} className="space-y-3 rounded-md border p-3">
@@ -101,10 +109,16 @@ function AddPieceForm({ caseId }: { caseId: string }) {
             onChange={(e) => setTipo(e.target.value)}
             className="block w-full rounded-md border bg-background px-2 py-1 text-sm"
           >
-            <option value="despacho_admissibilidade">Despacho de Admissibilidade</option>
-            <option value="recurso_revista">Recurso de Revista</option>
-            <option value="agravo_instrumento">Agravo de Instrumento</option>
-            <option value="agravo_interno">Agravo Interno</option>
+            <optgroup label="Decisões recorridas">
+              <option value="acordao_regional">Acórdão Regional</option>
+              <option value="acordao_embargos_declaracao">Acórdão de Embargos de Declaração</option>
+              <option value="despacho_admissibilidade">Despacho de Admissibilidade</option>
+            </optgroup>
+            <optgroup label="Recursos">
+              <option value="recurso_revista">Recurso de Revista</option>
+              <option value="agravo_instrumento">Agravo de Instrumento</option>
+              <option value="agravo_interno">Agravo Interno</option>
+            </optgroup>
           </select>
         </label>
         {requiresParte && (

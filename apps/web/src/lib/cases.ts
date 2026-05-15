@@ -140,6 +140,8 @@ export async function triggerDocx(id: string): Promise<void> {
 // -------- Structured pieces (add peça flow) --------
 
 export type PieceTipo =
+  | "acordao_regional"
+  | "acordao_embargos_declaracao"
   | "despacho_admissibilidade"
   | "recurso_revista"
   | "agravo_instrumento"
