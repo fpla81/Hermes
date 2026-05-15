@@ -228,7 +228,12 @@ export async function addPieceAction(
   if (!caseId) return { error: "case_id ausente" };
   if (!tipo) return { error: "selecione um tipo" };
   if (!text.trim()) return { error: "cole o texto da peça" };
-  if (tipo !== "despacho_admissibilidade" && !parteRaw) {
+  const TIPOS_SEM_PARTE = new Set([
+    "acordao_regional",
+    "acordao_embargos_declaracao",
+    "despacho_admissibilidade",
+  ]);
+  if (!TIPOS_SEM_PARTE.has(tipo) && !parteRaw) {
     return { error: "selecione a parte recorrente" };
   }
   const parte = (parteRaw ? (parteRaw as PieceParte) : null);
