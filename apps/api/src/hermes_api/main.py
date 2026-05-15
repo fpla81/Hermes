@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import __version__
 from .config import get_settings
-from .routes import bemtevi, cases, health, ingest
+from .routes import bemtevi, cases, debug, health, ingest
 
 settings = get_settings()
 
@@ -26,6 +26,7 @@ app.include_router(health.router)
 app.include_router(cases.router)
 app.include_router(bemtevi.router)
 app.include_router(ingest.router)
+app.include_router(debug.router)
 
 
 @app.get("/")
