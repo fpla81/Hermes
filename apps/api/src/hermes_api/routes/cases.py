@@ -171,16 +171,13 @@ async def trigger_analyze(
     case = await db.get(Case, case_id)
     if case is None or case.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    if case.status in (CaseStatus.capturing, CaseStatus.analyzing):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"caso já está em {case.status}",
-        )
     if case.raw_html is None and case.artifact_key is None and not case.structured_pieces:
         raise HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
             detail="adicione peças (ou capture o HTML) antes de analisar",
         )
+    # permite re-trigger mesmo se status==analyzing (task anterior pode ter
+    # crashado sem reverter o status). Worker idempotente sobrescreve resultado.
     _enqueue_analyze(str(case.id))
     return {"status": "enqueued", "case_id": str(case.id)}
 
