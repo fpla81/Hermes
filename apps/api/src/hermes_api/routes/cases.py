@@ -175,10 +175,10 @@ async def trigger_analyze(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"caso já está em {case.status}",
         )
-    if case.raw_html is None and case.artifact_key is None:
+    if case.raw_html is None and case.artifact_key is None and not case.structured_pieces:
         raise HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
-            detail="capture primeiro antes de analisar",
+            detail="adicione peças (ou capture o HTML) antes de analisar",
         )
     _enqueue_analyze(str(case.id))
     return {"status": "enqueued", "case_id": str(case.id)}

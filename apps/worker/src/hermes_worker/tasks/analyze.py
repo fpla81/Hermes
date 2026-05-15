@@ -23,6 +23,51 @@ def _load_html(case: Case) -> str | None:
     return None
 
 
+TIPO_LABEL = {
+    "acordao_regional": "Acórdão Regional",
+    "acordao_embargos_declaracao": "Acórdão de Embargos de Declaração",
+    "despacho_admissibilidade": "Despacho de Admissibilidade",
+    "recurso_revista": "Recurso de Revista",
+    "agravo_instrumento": "Agravo de Instrumento",
+    "agravo_interno": "Agravo Interno",
+}
+
+PARTE_LABEL = {
+    "reclamante": "Reclamante",
+    "reclamada": "Reclamada",
+    "reclamantes": "Reclamantes",
+    "reclamadas": "Reclamadas",
+    "ministerio_publico": "Ministério Público",
+    "outro": "Outro",
+}
+
+
+def _structured_to_text(pieces: list[dict]) -> str:
+    """Concatena structured_pieces em texto rotulado para o LLM."""
+    parts: list[str] = []
+    for p in pieces:
+        tipo = TIPO_LABEL.get(str(p.get("tipo", "")), str(p.get("tipo", "")))
+        parte = PARTE_LABEL.get(str(p.get("parte", "")), p.get("parte"))
+        data = p.get("data")
+        header = f"### {tipo}"
+        if parte:
+            header += f" — {parte}"
+        if data:
+            header += f" ({data})"
+        parts.append(header)
+        parts.append(str(p.get("text", "")))
+        parts.append("")
+    return "\n".join(parts).strip()
+
+
+def _load_text(case: Case) -> str | None:
+    """Prefere structured_pieces se houver; cai pra HTML capturado."""
+    pieces = case.structured_pieces
+    if pieces:
+        return _structured_to_text(list(pieces))
+    return _load_html(case)
+
+
 @celery_app.task(name="hermes.analyze_case", bind=True, max_retries=0)
 def analyze_case(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
     cid = uuid.UUID(case_id)
@@ -31,16 +76,16 @@ def analyze_case(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
         if case is None:
             return {"status": "not_found", "case_id": case_id}
 
-        html = _load_html(case)
-        if html is None:
-            return {"status": "no_capture", "case_id": case_id}
+        text = _load_text(case)
+        if text is None:
+            return {"status": "no_input", "case_id": case_id}
 
         case.status = CaseStatus.analyzing
         case.last_error = None
         session.commit()
 
         try:
-            anon = anonymize(html)
+            anon = anonymize(text)
             provider = get_llm_provider()
             result = provider.analyze(anon.text)
             case.analysis_result = result
