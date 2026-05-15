@@ -14,6 +14,20 @@ from sqlalchemy.ext.asyncio import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _clear_settings_cache_between_tests() -> Iterator[None]:
+    """Garante que get_settings.cache_clear seja chamado depois de cada teste.
+
+    Muitos testes mexem com env vars via monkeypatch e chamam cache_clear()
+    para forçar a releitura. Sem este teardown, um cache "envenenado" de um
+    teste vaza pro seguinte.
+    """
+    from hermes_api.config import get_settings
+
+    yield
+    get_settings.cache_clear()
+
+
 class FakeStorage:
     """Stub in-memory de S3Storage para os testes."""
 
