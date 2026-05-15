@@ -3,10 +3,10 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from hermes_api.anonymizer import anonymize
 from hermes_api.db import SyncSessionLocal
 from hermes_api.llm import get_llm_provider
 from hermes_api.models.case import Case, CaseStatus
+from hermes_api.services.anonymizer_llm import full_anonymize
 from hermes_api.storage import get_storage
 
 from ..celery_app import celery_app
@@ -85,7 +85,7 @@ def analyze_case(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
         session.commit()
 
         try:
-            anon = anonymize(text)
+            anon = full_anonymize(text)
             provider = get_llm_provider()
             result = provider.analyze(anon.text)
             case.analysis_result = result

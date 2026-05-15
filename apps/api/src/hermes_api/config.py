@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     )
     gemini_api_key: str | None = Field(default=None, validation_alias="GEMINI_API_KEY")
     gemini_model: str = Field(default="gemini-2.5-flash", validation_alias="GEMINI_MODEL")
+    gemini_anonymizer_model: str = Field(
+        default="gemini-2.5-flash", validation_alias="GEMINI_ANONYMIZER_MODEL"
+    )
     internal_secret: str | None = Field(
         default=None, validation_alias="HERMES_INTERNAL_SECRET"
     )

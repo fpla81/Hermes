@@ -56,7 +56,8 @@ def test_analyze_anonymiza_e_chama_llm(sync_session, mocker) -> None:
         assert c.status == CaseStatus.ready
         assert c.analysis_result == "resultado da análise"
         assert c.analyzed_at is not None
-        assert c.anonymization_map == {"<CPF_1>": "123.456.789-09"}
+        # CPF veio do regex; o LLM step adiciona "_note" quando sem GEMINI_API_KEY
+        assert c.anonymization_map["<CPF_1>"] == "123.456.789-09"
 
 
 def test_analyze_sem_captura_retorna_no_capture(sync_session) -> None:
