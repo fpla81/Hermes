@@ -1,8 +1,7 @@
 "use client";
 
-import { useActionState, useMemo, useState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
 
-import { renderMinutaHtml } from "@/lib/minuta-render";
 import { learnFundamentos } from "@/lib/fundamentos";
 
 import {
@@ -12,6 +11,7 @@ import {
   type MinutaDraftState,
   type SaveMinutaState,
 } from "../actions";
+import { MinutaTiptap } from "./minuta-tiptap";
 
 const INITIAL_DRAFT: MinutaDraftState = {};
 const INITIAL_SAVE: SaveMinutaState = {};
@@ -36,13 +36,12 @@ export function MinutaEditor({ caseId, initial, hasMinuta, hasDocx }: Props) {
   const [learnMsg, setLearnMsg] = useState<string | null>(null);
   const [learnError, setLearnError] = useState<string | null>(null);
   const [learning, startLearn] = useTransition();
+  const [showRaw, setShowRaw] = useState(false);
 
   // Quando o rascunho chega, oferece substituir
   if (draftState.text && draftState.text !== text && !text.trim()) {
     setText(draftState.text);
   }
-
-  const previewHtml = useMemo(() => renderMinutaHtml(text), [text]);
 
   const handleLearn = () => {
     setLearnMsg(null);
@@ -142,7 +141,18 @@ export function MinutaEditor({ caseId, initial, hasMinuta, hasDocx }: Props) {
       <form action={saveFormAction} className="space-y-3">
         <input type="hidden" name="id" value={caseId} />
         <input type="hidden" name="text" value={text} />
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+
+        <div className="flex items-center justify-end">
+          <button
+            type="button"
+            onClick={() => setShowRaw((v) => !v)}
+            className="text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            {showRaw ? "voltar ao editor visual" : "ver código markdown"}
+          </button>
+        </div>
+
+        {showRaw ? (
           <textarea
             rows={28}
             value={text}
@@ -151,11 +161,10 @@ export function MinutaEditor({ caseId, initial, hasMinuta, hasDocx }: Props) {
             spellCheck={false}
             className="w-full rounded-md border bg-background p-3 font-mono text-xs leading-relaxed"
           />
-          <div
-            className="prose-none w-full overflow-auto rounded-md border bg-muted/10 p-4 [&>p]:mb-2"
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
-          />
-        </div>
+        ) : (
+          <MinutaTiptap value={text} onChange={setText} />
+        )}
+
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="submit"
