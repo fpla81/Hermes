@@ -48,7 +48,7 @@ FORMATO OBRIGATÓRIO:
       "temas": [
         {
           "nome": "DESCRIÇÃO EM CAIXA ALTA - TERMOS SEPARADOS POR HÍFEN",  // ex.: "HORAS EXTRAS - DIVISOR APLICÁVEL"
-          "blueprint_tema": "..." | null,  // STRING EXATA do tema correspondente no blueprint do despacho (sem normalização). null SOMENTE se for matéria nova legítima ausente do blueprint (raro).
+          "blueprint_temas": ["..."],  // ARRAY de strings com o(s) tema(s) do blueprint que este tema do dossiê referencia (sem normalização). Geralmente UM item (1:1). Vários itens APENAS quando o blueprint lista um rótulo guarda-chuva explícito + sub-itens correlatos que foram agrupados — ver regra 7. Array vazio `[]` SOMENTE se for matéria nova legítima ausente do blueprint (raro).
           "admissibilidade": "admitido" | "denegado" | "parcialmente_admitido" | "prejudicado" | "nao_conhecido",  // SEGUIR o blueprint do despacho. Para AIRR, indicar a situação do RR que ele ataca.
           "acordao_recorrido_resumo": "...",        // 1 parágrafo seguindo a fórmula "O Eg. TRT [negou/deu] provimento ao Recurso Ordinário [da/do] [Reclamada/Reclamante], ao fundamento de que ... Eis as razões de decidir:"
           "acordao_recorrido_transcricao": ["..."],  // ARRAY de strings — UMA ENTRADA POR PARÁGRAFO. Transcreva o CAPÍTULO INTEIRO do acórdão regional referente ao tema: do início (relatório das razões recursais / delimitação do que se discute) até o fim (decisão da questão), passando pela fundamentação completa. NÃO recorte só o trecho "mais relevante" — premissas fáticas e jurídicas precisam ficar todas presentes para o ministro avaliar.
@@ -75,12 +75,13 @@ REGRAS ESTRITAS:
 4. Nomes processuais: "Eg. TRT", "TRT", "Corte Regional". NUNCA "Tribunal Regional" isolado.
 5. "Constituição da República" / "Constituição". NUNCA "Constituição Federal" nem "CF". Idem "Código Civil" (nunca "CC").
 6. Tema em caixa alta com " - " separando termos. NUNCA "TEMA Nº 1" ou ". ". Ex.: "DANO EXISTENCIAL - JORNADA EXTENUANTE".
-7. ALINHAMENTO 1:1 COM O DESPACHO (REGRA RÍGIDA):
+7. ALINHAMENTO COM O DESPACHO (REGRA RÍGIDA — modo CONSERVADOR):
    - Cada recurso/parte do dossiê deve corresponder a um recurso/parte do blueprint do despacho.
-   - Para cada recurso do blueprint, o dossiê deve produzir EXATAMENTE UM tema por tema listado no blueprint, na MESMA ORDEM. NÃO subdivida um tema do despacho em vários temas do dossiê, mesmo que as peças tragam várias sub-questões dentro daquele guarda-chuva. Agrupe TODAS as sub-questões sob o nome do tema correspondente do blueprint, dentro de `fundamentos_argumentativos` e `analise_juridica`.
+   - Default: 1:1 — cada tema do blueprint gera EXATAMENTE UM tema no dossiê, na MESMA ORDEM, agrupando todas as sub-questões da peça sob o nome do tema do blueprint. NÃO subdivida um tema do despacho em vários temas do dossiê.
+   - Exceção (agrupamento conservador): SOMENTE quando o blueprint apresenta UM tema com NOME GUARDA-CHUVA EXPLÍCITO (ex.: "Obrigações de fazer (Saúde e Segurança no Trabalho)", "Verbas rescisórias", "Adicionais") E lista também OUTROS temas que são CLARAMENTE sub-itens dele, agrupe todos sob UM ÚNICO tema do dossiê. Nesse caso, `blueprint_temas` lista TODAS as strings agrupadas. Se o blueprint não tem um rótulo guarda-chuva expresso, mantenha 1:1.
    - O `nome` do tema é a formatação canônica em CAIXA ALTA do tema do blueprint (ex.: blueprint "Horas extras - divisor" → dossiê "HORAS EXTRAS - DIVISOR"). NÃO crie qualificadores que o blueprint não tem.
-   - Preencha `blueprint_tema` com o STRING ORIGINAL do blueprint que este tema referencia (idêntico, sem normalização) — serve para rastreabilidade.
-   - Se as peças trazem matéria nova ausente do blueprint (raro), inclua o tema mesmo assim, mas marque `blueprint_tema: null` e cite o fato em `observacoes`.
+   - Preencha `blueprint_temas` com as strings ORIGINAIS do blueprint referenciadas (idêntico, sem normalização). Geralmente 1 item. Vários itens só no caso da exceção acima.
+   - Se as peças trazem matéria nova ausente do blueprint (raro), inclua o tema mesmo assim, mas marque `blueprint_temas: []` e cite o fato em `observacoes`.
    - Recursos/partes listados no blueprint sem peça correspondente nas peças anexadas: omitir do dossiê.
 8. Se a data do acórdão regional não estiver clara, deixe marco_legal_hint=null.
 9. `acordao_recorrido_transcricao` e `embargos_transcricao` são ARRAYS DE STRINGS, com UM ITEM POR PARÁGRAFO do trecho fonte. PRESERVE rigorosamente as quebras de parágrafo originais. NUNCA emita um único string longo com tudo concatenado — sempre array, mesmo se for um parágrafo só (`["único parágrafo"]`). A leitura da minuta depende dessa estrutura.
@@ -176,10 +177,21 @@ def _blueprint_recurso_label(recurso: dict[str, Any]) -> str:
     return f"{tipo} ({parte})"
 
 
+def _tema_blueprint_refs(tema: dict[str, Any]) -> list[str]:
+    """Lê `blueprint_temas` (array) ou cai pro legado `blueprint_tema` (string)."""
+    raw = tema.get("blueprint_temas")
+    if isinstance(raw, list):
+        return [str(x).strip() for x in raw if str(x).strip()]
+    legacy = tema.get("blueprint_tema")
+    if isinstance(legacy, str) and legacy.strip():
+        return [legacy.strip()]
+    return []
+
+
 def _validate_blueprint_alignment(
     dossie: dict[str, Any], blueprint: dict[str, Any] | None
 ) -> list[str]:
-    """Devolve avisos quando o dossiê não respeita o 1:1 de temas do despacho."""
+    """Devolve avisos quando o dossiê não respeita o alinhamento com o despacho."""
     if not blueprint or not blueprint.get("recursos"):
         return []
     blueprint_by_key: dict[tuple[str, str], list[str]] = {}
@@ -199,14 +211,21 @@ def _validate_blueprint_alignment(
                 f"{label}: dossiê produziu {len(temas)} temas; despacho lista {len(blueprint_temas)} — possível subdivisão indevida."
             )
         blueprint_set = {t.strip().lower() for t in blueprint_temas if t.strip()}
+        referenced: set[str] = set()
         for tema in temas:
-            ref = tema.get("blueprint_tema")
-            if ref is None:
-                continue
-            if str(ref).strip().lower() not in blueprint_set:
-                warnings.append(
-                    f"{label}: tema '{tema.get('nome', '?')}' referencia blueprint_tema='{ref}' que não consta do despacho."
-                )
+            refs = _tema_blueprint_refs(tema)
+            for ref in refs:
+                if ref.lower() not in blueprint_set:
+                    warnings.append(
+                        f"{label}: tema '{tema.get('nome', '?')}' referencia blueprint_tema='{ref}' que não consta do despacho."
+                    )
+                else:
+                    referenced.add(ref.lower())
+        missing = blueprint_set - referenced
+        if missing and len(temas) > 0:
+            warnings.append(
+                f"{label}: temas do despacho não referenciados pelo dossiê: {sorted(missing)}"
+            )
     return warnings
 
 

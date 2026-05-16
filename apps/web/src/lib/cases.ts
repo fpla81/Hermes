@@ -14,6 +14,8 @@ export type CaseStatus =
 
 export interface AnalysisTema {
   nome: string;
+  blueprint_temas?: string[];
+  /** @deprecated mantido para compatibilidade com dossiês antigos */
   blueprint_tema?: string | null;
   fundamentos_argumentativos: string[];
   permissivos_invocados: string[];

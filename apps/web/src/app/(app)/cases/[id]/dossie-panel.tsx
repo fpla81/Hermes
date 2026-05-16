@@ -55,13 +55,26 @@ export function DossiePanel({ dossie }: { dossie: AnalysisDossie }) {
           </header>
           {(r.temas || []).map((t, j) => (
             <section key={j} className="space-y-2 rounded border bg-muted/20 p-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h4 className="text-sm font-semibold">{t.nome}</h4>
-                {t.blueprint_tema === null && (
-                  <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-900">
-                    fora do despacho
-                  </span>
-                )}
+                {(() => {
+                  const refs = t.blueprint_temas ?? (t.blueprint_tema ? [t.blueprint_tema] : []);
+                  if (refs.length === 0) {
+                    return (
+                      <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-900">
+                        fora do despacho
+                      </span>
+                    );
+                  }
+                  if (refs.length > 1) {
+                    return (
+                      <span className="rounded bg-sky-100 px-2 py-0.5 text-[10px] font-medium text-sky-900">
+                        agrupa {refs.length} temas do despacho
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
               <ListBlock label="Fundamentos argumentativos" items={t.fundamentos_argumentativos} />
               <ListBlock label="Permissivos invocados" items={t.permissivos_invocados} />

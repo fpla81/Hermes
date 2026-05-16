@@ -23,8 +23,18 @@ PROMPT_TEMPLATE = """Você é um analista jurídico do TST. Leia o despacho de a
 Para cada recurso, devolva:
 - tipo: "recurso_revista" | "agravo_instrumento" | "agravo_interno" | "outro"
 - parte: "reclamante" | "reclamada" | "reclamantes" | "reclamadas" | "ministerio_publico" | "outro"
-- temas: lista de strings com os temas analisados (substantivo, ex.: "Horas extras", "Dano moral")
+- temas: lista de strings com os temas analisados PELO PRÓPRIO DESPACHO (substantivo, ex.: "Horas extras", "Negativa de prestação jurisdicional")
 - conclusao: "admitido" | "denegado" | "parcialmente_admitido" | "prejudicado" | "nao_conhecido"
+
+REGRAS CRÍTICAS PARA EXTRAÇÃO DE TEMAS:
+
+1. Tema = capítulo de análise do DESPACHO (admissibilidade recursal). Identifique pela ESTRUTURA do despacho: cabeçalho/seção (geralmente em CAIXA ALTA ou taxonomia hierárquica do PJe, ex.: "DIREITO PROCESSUAL CIVIL E DO TRABALHO / ATOS PROCESSUAIS / NULIDADE / NEGATIVA DE PRESTAÇÃO JURISDICIONAL"), tipicamente seguido de "Alegação(ões)" e dos fundamentos de admissibilidade.
+
+2. IGNORE tópicos que aparecem APENAS dentro de trechos transcritos de outras decisões. Despachos costumam reproduzir longos trechos da sentença, do acórdão regional ou dos embargos de declaração — esses trechos são CONTEXTO, não temas analisados pelo despacho. Se o despacho cola uma decisão que menciona "Tutela inibitória", "Dano moral coletivo" ou enumera obrigações de fazer, mas o despacho EM SI não tem cabeçalho/análise próprios sobre cada um desses pontos, NÃO os inclua como temas.
+
+3. Critério prático: cada tema da lista deve corresponder a uma decisão de admissibilidade própria no despacho (admite/denega aquele ponto). Se o despacho denega o recurso "globalmente" por um único fundamento (ex.: ausência de prestação jurisdicional, ou inadmissibilidade processual), o recurso tem UM tema só.
+
+4. Quando o despacho de fato analisa vários temas distintos com decisões próprias, liste todos. Se um tema é guarda-chuva (ex.: "Obrigações de fazer") e o despacho analisa sub-itens com decisões individuais, prefira o nome guarda-chuva como tema principal e cite os sub-itens entre parênteses no mesmo string apenas se isso for útil — não crie múltiplos temas para o mesmo capítulo de análise.
 
 Além disso, devolva no nível raiz:
 - acordao_regional_data: data do acórdão regional (Recurso Ordinário) em formato dd/mm/aaaa quando mencionada no despacho; senão null. Importante para definir o marco legal do Recurso de Revista.
