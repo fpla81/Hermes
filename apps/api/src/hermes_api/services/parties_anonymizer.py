@@ -19,7 +19,8 @@ import re
 import unicodedata
 from typing import Any
 
-from ..anonymizer import AnonymizationResult, anonymize as regex_anonymize
+from ..anonymizer import AnonymizationResult
+from ..anonymizer import anonymize as regex_anonymize
 
 VALID_ROLES = {"reclamante", "reclamada", "ministerio_publico"}
 ROLE_TOKEN = {
