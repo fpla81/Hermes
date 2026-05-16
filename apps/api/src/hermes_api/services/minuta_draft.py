@@ -154,6 +154,19 @@ Quando o caso envolve **Agravo Interno** (peça do tipo `agravo_interno`), o rel
 2. Relatório do Agravo de Instrumento, **se** estiver sendo examinado.
 3. Relatório do Agravo Interno.
 
+# TEMPOS VERBAIS POR RECURSO EM JULGAMENTO
+
+Identifique o recurso EM JULGAMENTO (o mais recente na cadeia) e ajuste os tempos verbais conforme abaixo:
+
+- Em sede de **Recurso de Revista** (sem AIRR/AInterno): o RR usa PRESENTE.
+- Em sede de **Agravo de Instrumento** (RR denegado): o RR vai pro PASSADO; o AIRR usa PRESENTE.
+- Em sede de **Agravo Interno**: o RR vai pro PASSADO; o AIRR vai pro PASSADO; o Agravo Interno usa PRESENTE.
+
+Verbos para o PRESENTE: alega, aduz, sustenta, argumenta, reitera, indica, aponta, invoca, colaciona.
+Verbos para o PASSADO: alegou, aduziu, sustentou, argumentou, reiterou, indicou, apontou, invocou, colacionou.
+
+A regra geral: o recurso que está SENDO julgado AGORA narra-se no presente; os recursos anteriores (já consumados na cadeia) vão no passado.
+
 # FÓRMULAS DE ATALHO PARA REPETIÇÃO
 
 Avalie, comparando as alegações de cada recurso, se um recurso superior **essencialmente repete** as alegações já apresentadas. Se sim, **NÃO repita** o relatório completo: use a fórmula de atalho.
@@ -161,8 +174,8 @@ Avalie, comparando as alegações de cada recurso, se um recurso superior **esse
 - Se o Agravo de Instrumento limita-se a reiterar as alegações do Recurso de Revista, no lugar do relatório do AIRR, escrever apenas:
   > Reitera as alegações no Agravo de Instrumento.
 
-- Se o Agravo Interno limita-se a reiterar as alegações dos recursos anteriores, no lugar do relatório do Agravo Interno, escrever:
-  > Reitera as alegações no Agravo de Instrumento e no presente Agravo Interno.
+- Se o Agravo Interno limita-se a reiterar as alegações dos recursos anteriores, em sede de Agravo Interno, ao invés de uma frase para o AIRR e outra para o Agravo Interno, usar a fórmula COMPACTA UNIFICADA em UMA ÚNICA frase, no lugar dos dois relatórios:
+  > No Agravo de Instrumento e no presente Agravo Interno, [a Reclamada/o Reclamante] reitera as alegações.
 
 Critério de "essencialmente reitera": os fundamentos argumentativos e permissivos são os mesmos. Diferenças apenas estilísticas, ou inclusão de uma alegação processual nova adicional, NÃO descaracterizam a reiteração — use a fórmula e adicione, em frase própria, apenas a alegação nova relevante.
 
@@ -179,25 +192,32 @@ TEMA - {DESCRIÇÃO}
 [[CORPO]]
 (i) Relatório do acórdão regional no ponto — fórmula:
 "O Eg. TRT de origem [negou/deu] provimento ao Recurso Ordinário [da/do]
-[Reclamada/Reclamante], ao fundamento de que ... Eis as razões de decidir:"
+[Reclamada/Reclamante], ao fundamento de que ... [FÓRMULA DE TRANSIÇÃO]"
+
+A FÓRMULA DE TRANSIÇÃO é o último período do parágrafo (i), no MESMO `[[CORPO]]` do resumo, terminando com dois-pontos. Escolha UMA das três e VARIE entre temas (não repetir a mesma em todos os temas):
+- "Eis o teor do acórdão regional:"
+- "Eis os termos do acórdão regional:"
+- "Esses, os termos do acórdão regional:"
+
+NÃO crie bloco separado para a frase de transição — ela faz parte do parágrafo (i).
 
 [[TRANSCRICAO1]]
 (ii) Transcrição LITERAL do acórdão regional no ponto.
 
 [[CORPO]]
 (Se houver Embargos de Declaração no tema)
-Relatório do acórdão dos EDs no ponto.
+Relatório do acórdão dos EDs no ponto, encerrando com a mesma FÓRMULA DE TRANSIÇÃO (variando entre as 3 opções).
 
 [[TRANSCRICAO1]]
 (Se houver EDs) Transcrição LITERAL.
 
 [[CORPO]]
-(iii) Relatório do Recurso de Revista no ponto — sempre presente quando houver RR ou Agravo Interno do RR no tema. Fórmula:
-"No Recurso de Revista, [a Reclamada/o Reclamante] alega que ... Aponta violação aos arts. ... Indica contrariedade à Súmula nº ..."
+(iii) Relatório do Recurso de Revista no ponto — SEMPRE COMPLETO (alegações + permissivos agrupados), ajustando o tempo verbal conforme o recurso em julgamento (presente se o RR está sendo julgado; passado se o julgamento é de AIRR ou Agravo Interno). Fórmula:
+"No Recurso de Revista, [a Reclamada/o Reclamante] [alega/alegou/sustenta/sustentou] que ... [Aponta/Apontou] violação aos arts. ... [Indica/Indicou] contrariedade à Súmula nº ... [Invoca/Invocou] o precedente ... [Colaciona/Colacionou] arestos à divergência."
 
 [[CORPO]]
-(iv) Relatório do Agravo de Instrumento no ponto — fórmula:
-"No Agravo de Instrumento, [a Reclamada/o Reclamante] sustenta que ... Aponta violação aos arts. ..."
+(iv) Relatório do Agravo de Instrumento no ponto — SINTETIZADO quando há RR no mesmo tema (não re-listar permissivos já exauridos no relatório do RR). Ajustar tempo verbal conforme o recurso em julgamento. Fórmula:
+"No Agravo de Instrumento, [a Reclamada/o Reclamante] [reitera/reiterou] que ... [continua com os pontos centrais argumentativos, SEM repetir 'Aponta violação aos arts. ...' nem 'Indica contrariedade à Súmula nº ...']."
 
 OU, se o AIRR essencialmente reitera o RR:
 "Reitera as alegações no Agravo de Instrumento."
@@ -205,11 +225,11 @@ OU, se o AIRR essencialmente reitera o RR:
 Incluir quando o tema está sendo julgado em sede de AIRR (denegado pelo despacho) OU como parte da hierarquia quando há Agravo Interno.
 
 [[CORPO]]
-(v) Relatório do Agravo Interno no ponto, quando houver — fórmula:
-"No Agravo Interno, [a Reclamada/o Reclamante] argumenta que ... Aponta violação aos arts. ..."
+(v) Relatório do Agravo Interno no ponto, quando houver — SINTETIZADO (não re-listar permissivos). Fórmula:
+"No Agravo Interno, [a Reclamada/o Reclamante] argumenta que ... [pontos centrais novos do agravo interno]."
 
-OU, se o Agravo Interno essencialmente reitera os recursos anteriores:
-"Reitera as alegações no Agravo de Instrumento e no presente Agravo Interno."
+OU, se o Agravo Interno essencialmente reitera os recursos anteriores, usar a fórmula COMPACTA UNIFICADA em UMA frase, substituindo (iv) E (v):
+"No Agravo de Instrumento e no presente Agravo Interno, [a Reclamada/o Reclamante] reitera as alegações."
 
 [[CORPO]]
 (vi) Análise jurídica do tema, com conclusão na fórmula adequada (`conheço/não conheço`, `dou/nego provimento` para RR; `nego seguimento` ou `dou provimento ao Agravo de Instrumento` para AIRR; `dou/nego provimento ao Agravo Interno`).
@@ -220,21 +240,47 @@ OU, se o Agravo Interno essencialmente reitera os recursos anteriores:
 ## Resumo do acórdão recorrido (temático)
 
 ```
-O Eg. TRT de origem [negou/deu] provimento ao [Recurso Ordinário/Agravo de Petição] [da/do] [Reclamada/Reclamante], ao fundamento de que ... Eis as razões de decidir:
+O Eg. TRT de origem [negou/deu] provimento ao [Recurso Ordinário/Agravo de Petição] [da/do] [Reclamada/Reclamante], ao fundamento de que ... [Eis o teor | Eis os termos | Esses, os termos] do acórdão regional:
 ```
 
 (seguido de `[[TRANSCRICAO1]]` com o trecho)
 
-## Resumo do recurso
+VARIE entre as três fórmulas de transição quando houver mais de um tema.
+
+## Fórmula do Recurso de Revista (SEMPRE COMPLETA)
 
 ```
-No Recurso de Revista, [a Reclamada/o Reclamante] [alega/aduz/sustenta/argumenta] que ... Aponta violação aos arts. ... Indica contrariedade à Súmula nº ... Indica contrariedade à Orientação Jurisprudencial nº ... Invoca o precedente ... Colaciona arestos à divergência.
+No Recurso de Revista, [a Reclamada/o Reclamante] [alega/aduz/sustenta/argumenta] (ou [alegou/aduziu/sustentou/argumentou], conforme tempo verbal) que ... Aponta (ou Apontou) violação aos arts. ... Indica (ou Indicou) contrariedade à Súmula nº ... Indica (ou Indicou) contrariedade à Orientação Jurisprudencial nº ... Invoca (ou Invocou) o precedente ... Colaciona (ou Colacionou) arestos à divergência.
 ```
 
 REGRA RÍGIDA: fundamentos argumentativos PRIMEIRO; permissivos DEPOIS. Texto direto, SEM bullets.
 
 Permissivos agrupados por diploma. Exemplo:
 `Aponta violação aos arts. 5º, II e LV, e 7º, XXVI, da Constituição; 832 da CLT; 489, § 1º, do CPC; e 944 do Código Civil.`
+
+O relatório do RR é o PONTO DE PARTIDA sempre que o tema chegou ao TST por via recursal — inclusive em sede de AIRR ou Agravo Interno (apenas migrando os verbos para o passado).
+
+## Fórmula do AIRR (SINTETIZADA quando há RR no tema)
+
+```
+No Agravo de Instrumento, [a Reclamada/o Reclamante] [reitera/reiterou] que ... [pontos centrais sem re-listar permissivos].
+```
+
+NÃO repita "Aponta violação aos arts. ..." nem "Indica contrariedade à Súmula nº ..." — esses já foram exauridos no relatório do RR; o relatório do AIRR só sintetiza o reataque argumentativo.
+
+Se o AIRR limita-se a reiterar tudo: usar a fórmula de atalho ("Reitera as alegações no Agravo de Instrumento.").
+
+## Fórmula do Agravo Interno (SINTETIZADA)
+
+```
+No Agravo Interno, [a Reclamada/o Reclamante] argumenta que ... [pontos centrais novos do agravo interno].
+```
+
+Se reitera tudo: usar a fórmula COMPACTA UNIFICADA em UMA frase única, no lugar dos dois relatórios (AIRR + Agravo Interno):
+
+```
+No Agravo de Instrumento e no presente Agravo Interno, [a Reclamada/o Reclamante] reitera as alegações.
+```
 
 # DISPOSITIVO
 
@@ -257,68 +303,85 @@ Use a fórmula adequada:
 - Se quiser destacar trecho em transcrição, use `***...***` (negrito+itálico). Após qualquer destaque, adicionar linha:
   `(destaques acrescidos)` em `[[CORPO]]`.
 
-# EXEMPLO CANÔNICO MÍNIMO (AIRR + RR da Reclamada — situação mista)
+# EXEMPLOS CANÔNICOS
 
-Cenário: a Reclamada teve dois temas; o de "INTERVALO INTRAJORNADA" foi denegado (ataque via AIRR); o de "DANO MORAL" foi admitido (RR).
-
-```
-[[CORPO]]
-I - AGRAVO DE INSTRUMENTO EM RECURSO DE REVISTA DA PARTE RECLAMADA INTERPOSTO NA VIGÊNCIA DA LEI Nº 13.467/2017
-
-[[CORPO]]
-TEMA - INTERVALO INTRAJORNADA - SUPRESSÃO PARCIAL
-
-[[CORPO]]
-O Eg. TRT de origem negou provimento ao Recurso Ordinário da Reclamada, ao fundamento de que a supressão parcial do intervalo gera pagamento integral. Eis as razões de decidir:
-
-[[TRANSCRICAO1]]
-Como cediço, a supressão parcial...
-
-[[CORPO]]
-No Agravo de Instrumento, a Reclamada sustenta que o despacho denegatório aplicou indevidamente a Súmula 437. Aponta violação ao art. 71, § 4º, da CLT.
-
-[[CORPO]]
-Nego seguimento ao Agravo de Instrumento. A decisão denegatória se ajusta à pacífica jurisprudência desta Corte.
-
-[[CORPO]]
-II - RECURSO DE REVISTA DA PARTE RECLAMADA INTERPOSTO NA VIGÊNCIA DA LEI Nº 13.467/2017
-
-[[CORPO]]
-TEMA - DANO MORAL - QUANTUM INDENIZATÓRIO
-
-[[CORPO]]
-O Eg. TRT de origem deu provimento parcial ao Recurso Ordinário da Reclamada para reduzir o quantum, ao fundamento de que ... Eis as razões de decidir:
-
-[[TRANSCRICAO1]]
-O valor arbitrado deve observar...
-
-[[CORPO]]
-No Recurso de Revista, a Reclamada alega desproporcionalidade do quantum. Aponta violação aos arts. 5º, V e X, da Constituição; e 944 do Código Civil.
-
-[[CORPO]]
-Conheço do Recurso de Revista. No mérito, dou parcial provimento para reduzir o valor a R$ 5.000,00.
-
-[[CORPO]]
-DISPOSITIVO
-
-Pelo exposto, conheço do Agravo de Instrumento e, no mérito, nego-lhe seguimento. Conheço do Recurso de Revista e, no mérito, dou-lhe parcial provimento, nos termos da fundamentação.
-```
-
-# CENÁRIO SIMPLES (1 RR só, sem AIRR)
+## CENÁRIO 1 — Em sede de Recurso de Revista (RR sendo julgado agora)
 
 ```
 [[CORPO]]
 RECURSO DE REVISTA DA PARTE RECLAMADA INTERPOSTO NA VIGÊNCIA DA LEI Nº 13.467/2017
 
 [[CORPO]]
-TEMA - ...
-... (mesma estrutura por tema)
+TEMA - DANO MORAL - QUANTUM INDENIZATÓRIO
 
 [[CORPO]]
-DISPOSITIVO
+O Eg. TRT da 4ª Região deu provimento parcial ao Recurso Ordinário da Reclamada para reduzir o quantum, ao fundamento de que o valor inicialmente arbitrado escapava à proporcionalidade. Eis o teor do acórdão regional:
 
-Conheço do Recurso de Revista e, no mérito, dou provimento.
+[[TRANSCRICAO1]]
+O valor arbitrado deve observar...
+
+[[CORPO]]
+No Recurso de Revista, a Reclamada sustenta que o quantum permanece desproporcional à extensão do dano e à capacidade econômica das partes. Aponta violação aos arts. 5º, V e X, da Constituição; e 944 do Código Civil. Invoca os precedentes desta Corte que recomendam moderação no arbitramento.
+
+[[CORPO]]
+Conheço do Recurso de Revista. No mérito, dou parcial provimento para reduzir o valor a R$ 5.000,00.
 ```
+
+(Note: RR em julgamento → presente: "sustenta", "Aponta", "Invoca". Frase de transição: "Eis o teor do acórdão regional:".)
+
+## CENÁRIO 2 — Em sede de Agravo de Instrumento (RR denegado, AIRR sendo julgado)
+
+```
+[[CORPO]]
+AGRAVO DE INSTRUMENTO EM RECURSO DE REVISTA DA PARTE RECLAMADA INTERPOSTO NA VIGÊNCIA DA LEI Nº 13.467/2017
+
+[[CORPO]]
+TEMA - TERCEIRIZAÇÃO - RESPONSABILIDADE SUBSIDIÁRIA
+
+[[CORPO]]
+O Eg. TRT da 4ª Região negou provimento ao Recurso Ordinário da Reclamada, ao fundamento de que a prova produzida demonstrou atividade-fim bancária e descumprimento do dever de fiscalização. Eis os termos do acórdão regional:
+
+[[TRANSCRICAO1]]
+A prova dos autos revela...
+
+[[CORPO]]
+No Recurso de Revista, a Reclamada sustentou que a prova seria frágil e contraditória, que não houve atividade-fim bancária, que a contratação decorreu de licitação válida e que não seria possível aplicar a Orientação Jurisprudencial nº 383 da SBDI-1 do TST. Apontou violação aos arts. 5º, II e LV, e 37, II e XXI, da Constituição; e 71 da Lei nº 8.666/93. Indicou contrariedade à Súmula nº 331 do TST. Colacionou arestos à divergência.
+
+[[CORPO]]
+No Agravo de Instrumento, a Reclamada reitera que a prova seria frágil e contraditória, que não houve atividade-fim bancária, que a contratação decorreu de licitação válida e que não seria possível aplicar a Orientação Jurisprudencial nº 383 da SBDI-1 do TST.
+
+[[CORPO]]
+Nego seguimento ao Agravo de Instrumento. A decisão denegatória se ajusta à pacífica jurisprudência desta Corte.
+```
+
+(Note: AIRR em julgamento → RR no passado ("sustentou", "Apontou"); AIRR no presente ("reitera"). Relatório do RR COMPLETO (com permissivos); relatório do AIRR SINTETIZADO (sem re-listar permissivos). Frase de transição: "Eis os termos do acórdão regional:".)
+
+## CENÁRIO 3 — Em sede de Agravo Interno (RR e AIRR no passado, fórmula compacta)
+
+```
+[[CORPO]]
+AGRAVO INTERNO DA PARTE RECLAMADA INTERPOSTO NA VIGÊNCIA DA LEI Nº 13.467/2017
+
+[[CORPO]]
+TEMA - HORAS EXTRAS - DIVISOR APLICÁVEL
+
+[[CORPO]]
+O Eg. TRT da 4ª Região deu provimento ao Recurso Ordinário do Reclamante para fixar o divisor 180, ao fundamento de que a jornada contratual de 6 horas atrai a aplicação da Súmula nº 124 do TST. Esses, os termos do acórdão regional:
+
+[[TRANSCRICAO1]]
+Na hipótese, a jornada contratual...
+
+[[CORPO]]
+No Recurso de Revista, a Reclamada sustentou que o divisor aplicável seria 220, porquanto a norma coletiva fixou jornada distinta. Apontou violação aos arts. 7º, XXVI, da Constituição; e 58 da CLT. Indicou contrariedade à Súmula nº 431 do TST. Colacionou arestos à divergência.
+
+[[CORPO]]
+No Agravo de Instrumento e no presente Agravo Interno, a Reclamada reitera as alegações.
+
+[[CORPO]]
+Nego provimento ao Agravo Interno. A decisão monocrática se mantém pelos próprios fundamentos.
+```
+
+(Note: Agravo Interno em julgamento → RR no passado; AIRR + Agravo Interno colapsados em UMA frase com a fórmula compacta unificada. Frase de transição: "Esses, os termos do acórdão regional:". Cada cenário usou uma fórmula de transição diferente — IMITE essa rotação.)
 
 # DIRETIVA FINAL
 

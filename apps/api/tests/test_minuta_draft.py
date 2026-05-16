@@ -62,8 +62,26 @@ def test_prompt_lists_all_markers() -> None:
 def test_prompt_contains_agravo_interno_hierarchy() -> None:
     assert "HIERARQUIA QUANDO HÁ AGRAVO INTERNO" in PROMPT_TEMPLATE
     assert "Reitera as alegações no Agravo de Instrumento." in PROMPT_TEMPLATE
+
+
+def test_prompt_contains_transcricao_formulas() -> None:
+    """Prompt deve listar as 3 fórmulas de transição para a transcrição do acórdão regional."""
+    assert "Eis o teor do acórdão regional:" in PROMPT_TEMPLATE
+    assert "Eis os termos do acórdão regional:" in PROMPT_TEMPLATE
+    assert "Esses, os termos do acórdão regional:" in PROMPT_TEMPLATE
+
+
+def test_prompt_contains_tempos_verbais_section() -> None:
+    """Prompt deve documentar a regra de tempos verbais por recurso em julgamento."""
+    assert "TEMPOS VERBAIS POR RECURSO EM JULGAMENTO" in PROMPT_TEMPLATE
+    assert "PRESENTE" in PROMPT_TEMPLATE
+    assert "PASSADO" in PROMPT_TEMPLATE
+
+
+def test_prompt_contains_compact_agravo_interno_formula() -> None:
+    """Em sede de Agravo Interno reiterando, AIRR + AInterno colapsam em UMA frase."""
     assert (
-        "Reitera as alegações no Agravo de Instrumento e no presente Agravo Interno."
+        "No Agravo de Instrumento e no presente Agravo Interno, [a Reclamada/o Reclamante] reitera as alegações."
         in PROMPT_TEMPLATE
     )
 
