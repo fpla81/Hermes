@@ -7,7 +7,7 @@ from hermes_api.db import SyncSessionLocal
 from hermes_api.llm import get_llm_provider
 from hermes_api.models.case import Case, CaseStatus
 from hermes_api.services.analysis_themed import build_dossie
-from hermes_api.services.anonymizer_llm import full_anonymize
+from hermes_api.services.parties_anonymizer import anonymize_with_parties
 from hermes_api.storage import get_storage
 
 from ..celery_app import celery_app
@@ -86,13 +86,14 @@ def analyze_case(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
         session.commit()
 
         try:
+            parties = list(case.parties or [])
             if case.structured_pieces:
                 # Caminho novo: peças estruturadas → dossiê temático.
                 # Pula o anonymize+analyze do texto combinado (legado).
                 combined_map: dict[str, str] = {}
                 anon_pieces = []
                 for p in list(case.structured_pieces):
-                    pa = full_anonymize(str(p.get("text", "")))
+                    pa = anonymize_with_parties(str(p.get("text", "")), parties)
                     combined_map.update(pa.mapping)
                     anon_pieces.append({**p, "text": pa.text})
                 case.analysis_dossie = build_dossie(
@@ -103,7 +104,7 @@ def analyze_case(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
                 case.analysis_result = None
             else:
                 # Caminho legado: HTML capturado → análise plana.
-                anon = full_anonymize(text)
+                anon = anonymize_with_parties(text, parties)
                 provider = get_llm_provider()
                 result = provider.analyze(anon.text)
                 case.analysis_result = result

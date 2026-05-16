@@ -9,9 +9,38 @@ from ..models.case import CaseStatus
 PROCESSO_RE = re.compile(r"^(\d{6,7})-(\d{2})\.(\d{4})\.(\d)\.(\d{2})\.(\d{4})$")
 
 
+VALID_PARTY_ROLES = {"reclamante", "reclamada", "ministerio_publico"}
+
+
+class PartyIn(BaseModel):
+    role: str = Field(..., description="reclamante | reclamada | ministerio_publico")
+    ordinal: int = Field(default=1, ge=1)
+    name: str = Field(..., min_length=1, max_length=255)
+    aliases: list[str] = Field(default_factory=list)
+
+    @field_validator("role")
+    @classmethod
+    def validar_role(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in VALID_PARTY_ROLES:
+            raise ValueError(f"role inválido; use um de {sorted(VALID_PARTY_ROLES)}")
+        return v
+
+    @field_validator("name")
+    @classmethod
+    def trim_name(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("aliases")
+    @classmethod
+    def clean_aliases(cls, v: list[str]) -> list[str]:
+        return [a.strip() for a in v if a and a.strip()]
+
+
 class CaseCreate(BaseModel):
     numero_processo: str = Field(..., min_length=19, max_length=64)
     titulo: str | None = Field(default=None, max_length=255)
+    parties: list[PartyIn] = Field(default_factory=list)
 
     @field_validator("numero_processo")
     @classmethod
@@ -22,6 +51,10 @@ class CaseCreate(BaseModel):
             raise ValueError("numero_processo deve seguir NNNNNNN-DD.AAAA.J.TR.OOOO")
         seq, dv, ano, justica, tribunal, origem = m.groups()
         return f"{seq.zfill(7)}-{dv}.{ano}.{justica}.{tribunal}.{origem}"
+
+
+class PartiesUpdate(BaseModel):
+    parties: list[PartyIn] = Field(default_factory=list)
 
 
 class CaseRead(BaseModel):
@@ -36,6 +69,7 @@ class CaseRead(BaseModel):
     analyzed_at: datetime | None = None
     analysis_result: str | None = None
     analysis_dossie: dict | None = None
+    parties: list[dict] | None = None
     minuta_md: str | None = None
     has_manifest: bool = False
     has_packets: bool = False

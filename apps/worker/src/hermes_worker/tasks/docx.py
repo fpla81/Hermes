@@ -5,6 +5,7 @@ import uuid
 from hermes_api.db import SyncSessionLocal
 from hermes_api.models.case import Case, CaseStatus
 from hermes_api.services.docx import render_docx
+from hermes_api.services.parties_anonymizer import postprocess_minuta
 from hermes_api.storage import get_storage
 
 from ..celery_app import celery_app
@@ -33,7 +34,8 @@ def render_docx_task(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
             return {"status": "error", "case_id": case_id, "error": "no storage"}
 
         try:
-            blob = render_docx(case.minuta_md)
+            processed = postprocess_minuta(case.minuta_md, case.anonymization_map)
+            blob = render_docx(processed)
             key = DOCX_KEY_TEMPLATE.format(case_id=case_id)
             storage.put_bytes(
                 key,

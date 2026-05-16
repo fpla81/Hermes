@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 
 import { createCaseAction, type CreateCaseState } from "../actions";
+import { PartiesEditor } from "../parties-editor";
 
 const initial: CreateCaseState = {};
 
@@ -11,15 +12,16 @@ export default function NewCasePage() {
   const [state, action, pending] = useActionState(createCaseAction, initial);
 
   return (
-    <div className="max-w-lg space-y-6">
+    <div className="max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Novo caso</h1>
         <p className="text-sm text-muted-foreground">
-          Informe o número do processo TST no formato CNJ.
+          Informe o número do processo e as partes. Os nomes serão substituídos
+          por placeholders (RECLAMANTE_1, RECLAMADA_1...) antes da análise pelo LLM.
         </p>
       </div>
 
-      <form action={action} className="space-y-4">
+      <form action={action} className="space-y-6">
         <div className="space-y-1">
           <label htmlFor="numero_processo" className="text-sm font-medium">
             Número do processo
@@ -42,6 +44,16 @@ export default function NewCasePage() {
             name="titulo"
             className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
+        </div>
+
+        <div className="space-y-2">
+          <h2 className="text-base font-medium">Partes do processo</h2>
+          <p className="text-xs text-muted-foreground">
+            Use aliases pra variações comuns dos nomes (ex.: razão social
+            abreviada, sobrenome usado sozinho). Word-boundary aplicado, então
+            substrings dentro de outras palavras não são tocadas.
+          </p>
+          <PartiesEditor />
         </div>
 
         {state.error && (

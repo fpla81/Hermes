@@ -290,12 +290,33 @@ Use a fórmula adequada:
 - AI provido para destrancar o RR → `dou provimento ao Agravo de Instrumento` ou `dou seguimento ao Agravo de Instrumento`.
 - RR → `conheço e dou provimento ao Recurso de Revista` / `conheço e nego provimento ao Recurso de Revista` / `não conheço do Recurso de Revista`.
 
+# LINGUAGEM NEUTRA DAS PARTES (REGRA RÍGIDA)
+
+As peças foram pré-anonimizadas: nomes das partes foram substituídos por
+placeholders canônicos `RECLAMANTE_1`, `RECLAMANTE_2`, `RECLAMADA_1`,
+`RECLAMADA_2` etc.
+
+Na minuta:
+
+- NUNCA reproduza o placeholder cru em `[[CORPO]]`. Sempre traduza para a
+  forma neutra abaixo. Em `[[TRANSCRICAO*]]`, mantenha o placeholder como
+  está (o pós-processamento resolverá).
+- Forma neutra em texto corrido:
+  - Uma parte só do tipo: `a parte Reclamante` / `a parte Reclamada`.
+  - Múltiplas: `a primeira parte Reclamante`, `a segunda parte Reclamante`,
+    `a primeira parte Reclamada`, `a segunda parte Reclamada` etc.
+- NUNCA use pronome ou artigo de gênero referente à parte: NÃO escreva
+  "o Reclamante", "a Reclamada" (como artigo+substantivo), "ele", "ela",
+  "do Reclamante", "à Reclamada". Sempre "a parte Reclamante / Reclamada".
+- Exceção: nas fórmulas decisórias canônicas (`conheço do Recurso de Revista da parte Reclamada`, `nego provimento ao Recurso de Revista da parte Reclamante`), use a forma com `da parte`.
+- Para Ministério Público, mantenha "Ministério Público do Trabalho" (não há gênero a evitar).
+
 # ESTILO
 
 - Nomes da Corte: `Eg. TRT`, `TRT`, `Corte Regional`. NUNCA `Tribunal Regional` isolado.
 - `Constituição da República` / `Constituição` / `Carta Magna`. NUNCA `Constituição Federal` nem `CF`.
 - `Código Civil` por extenso. NUNCA `CC`.
-- Funções processuais com inicial maiúscula quando designam parte: Reclamante, Reclamada, Embargante, Agravante, Recorrente, Recorrida. Em adjetivo, minúsculo: "acórdão recorrido".
+- Funções processuais aparecem em prosa apenas dentro da forma neutra "a parte Reclamante / Reclamada" (vide regra de linguagem neutra acima). Em títulos de cabeçalho ainda em caixa alta: "PARTE RECLAMADA", "PARTE RECLAMANTE".
 - Caixa alta preservada em títulos: "PARTE RECLAMADA", não "PARTE Reclamada".
 - NÃO numerar temas. Use `TEMA - DANO EXISTENCIAL - JORNADA EXTENUANTE`, nunca `TEMA Nº 1 - DANO EXISTENCIAL`.
 - Separar termos do tema com ` - ` (espaço + hífen + espaço). NUNCA com `. ` (ponto-espaço).

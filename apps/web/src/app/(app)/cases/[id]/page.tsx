@@ -6,6 +6,7 @@ import type { DespachoBlueprint, StructuredPiece } from "@/lib/cases";
 import { AnalyzeButton } from "./analyze-button";
 import { DossiePanel } from "./dossie-panel";
 import { MinutaPanel } from "./minuta-panel";
+import { PartiesPanel } from "./parties-panel";
 import { PiecesPanel } from "./pieces-panel";
 import { CasePolling } from "./polling";
 
@@ -78,6 +79,8 @@ export default async function CaseDetailPage({
           <strong className="font-medium">Último erro:</strong> {c.last_error}
         </div>
       )}
+
+      <PartiesPanel caseId={id} parties={c.parties} />
 
       <PiecesPanel caseId={id} pieces={pieces} blueprint={blueprint} />
 

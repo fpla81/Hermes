@@ -6,13 +6,15 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from ..auth import current_user_id
-from ..services.anonymizer_llm import full_anonymize
+from ..schemas.case import PartyIn
+from ..services.parties_anonymizer import anonymize_with_parties
 
 router = APIRouter(prefix="/debug", tags=["debug"])
 
 
 class AnonymizePreviewIn(BaseModel):
     text: str
+    parties: list[PartyIn] | None = None
 
 
 class AnonymizePreviewOut(BaseModel):
@@ -26,15 +28,14 @@ def anonymize_preview(
     payload: AnonymizePreviewIn,
     _: str = Depends(current_user_id),
 ) -> AnonymizePreviewOut:
-    """Roda regex + LLM anonymizer em texto cru e devolve o resultado.
+    """Roda regex + substituição determinística das partes em texto cru.
 
-    Útil pra calibrar prompt e ver o que cada passo cobre. Cobra Gemini
-    Flash a cada chamada (~R$ 0,02 por kchar grande).
+    Útil pra auditar o resultado da anonimização antes de mandar pro LLM.
     """
-    result = full_anonymize(payload.text)
-    real_subs = sum(1 for k in result.mapping if not k.startswith("_"))
+    parties = [p.model_dump() for p in (payload.parties or [])]
+    result = anonymize_with_parties(payload.text, parties)
     return AnonymizePreviewOut(
         anonymized=result.text,
         mapping=result.mapping,
-        substitutions=real_subs,
+        substitutions=len(result.mapping),
     )

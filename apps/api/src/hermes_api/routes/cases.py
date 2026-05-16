@@ -13,6 +13,7 @@ from ..schemas.case import (
     CaseCreate,
     CaseRead,
     MinutaUpload,
+    PartiesUpdate,
     PiecesUpload,
     PreparedListing,
     StructuredPiece,
@@ -100,6 +101,7 @@ async def create_case(
         user_id=user_id,
         numero_processo=payload.numero_processo,
         titulo=payload.titulo,
+        parties=[p.model_dump() for p in payload.parties] or None,
     )
     db.add(case)
     await db.commit()
@@ -116,6 +118,22 @@ async def get_case(
     case = await db.get(Case, case_id)
     if case is None or case.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return case
+
+
+@router.put("/{case_id}/parties", response_model=CaseRead)
+async def update_parties(
+    case_id: uuid.UUID,
+    payload: PartiesUpdate,
+    user_id: str = Depends(current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> Case:
+    case = await db.get(Case, case_id)
+    if case is None or case.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    case.parties = [p.model_dump() for p in payload.parties] or None
+    await db.commit()
+    await db.refresh(case)
     return case
 
 

@@ -35,6 +35,15 @@ export interface AnalysisDossie {
   observacoes?: string;
 }
 
+export type PartyRole = "reclamante" | "reclamada" | "ministerio_publico";
+
+export interface Party {
+  role: PartyRole;
+  ordinal: number;
+  name: string;
+  aliases: string[];
+}
+
 export interface Case {
   id: string;
   numero_processo: string;
@@ -45,6 +54,7 @@ export interface Case {
   analyzed_at: string | null;
   analysis_result: string | null;
   analysis_dossie: AnalysisDossie | null;
+  parties: Party[] | null;
   minuta_md: string | null;
   has_manifest: boolean;
   has_packets: boolean;
@@ -85,10 +95,18 @@ export async function getCaseHtml(id: string): Promise<Response> {
 export async function createCase(input: {
   numero_processo: string;
   titulo?: string | null;
+  parties?: Party[];
 }): Promise<Case> {
   return apiJson<Case>("/cases", {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export async function updateParties(id: string, parties: Party[]): Promise<Case> {
+  return apiJson<Case>(`/cases/${id}/parties`, {
+    method: "PUT",
+    body: JSON.stringify({ parties }),
   });
 }
 

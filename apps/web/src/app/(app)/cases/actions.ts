@@ -16,12 +16,13 @@ import {
   triggerCapture,
   triggerDocx,
   triggerPackets,
+  updateParties,
   uploadMinuta,
   uploadPieces,
   uploadPrepared,
   validateResources,
 } from "@/lib/cases";
-import type { PieceIn, PieceParte, PieceTipo } from "@/lib/cases";
+import type { Party, PieceIn, PieceParte, PieceTipo } from "@/lib/cases";
 
 export type CreateCaseState = {
   error?: string;
@@ -33,17 +34,54 @@ export async function createCaseAction(
 ): Promise<CreateCaseState> {
   const numero = String(formData.get("numero_processo") ?? "").trim();
   const titulo = String(formData.get("titulo") ?? "").trim() || null;
+  const partiesRaw = String(formData.get("parties_json") ?? "").trim();
+  let parties: Party[] = [];
+  if (partiesRaw) {
+    try {
+      const parsed = JSON.parse(partiesRaw);
+      if (Array.isArray(parsed)) parties = parsed as Party[];
+    } catch {
+      return { error: "Lista de partes inválida (JSON malformado)." };
+    }
+  }
   if (!numero) return { error: "Informe o número do processo." };
   try {
-    await createCase({ numero_processo: numero, titulo });
+    await createCase({ numero_processo: numero, titulo, parties });
   } catch (e) {
     if (e instanceof ApiError && e.status === 422) {
-      return { error: "Número de processo inválido. Use o formato CNJ." };
+      return { error: "Dados inválidos. Confira o número e as partes." };
     }
     return { error: e instanceof Error ? e.message : "Erro desconhecido." };
   }
   revalidatePath("/cases");
   redirect("/cases");
+}
+
+export type UpdatePartiesState = { error?: string; ok?: boolean };
+
+export async function updatePartiesAction(
+  _prev: UpdatePartiesState,
+  formData: FormData,
+): Promise<UpdatePartiesState> {
+  const id = String(formData.get("id") ?? "");
+  const partiesRaw = String(formData.get("parties_json") ?? "").trim();
+  if (!id) return { error: "id ausente" };
+  let parties: Party[] = [];
+  if (partiesRaw) {
+    try {
+      const parsed = JSON.parse(partiesRaw);
+      if (Array.isArray(parsed)) parties = parsed as Party[];
+    } catch {
+      return { error: "Lista de partes inválida (JSON malformado)." };
+    }
+  }
+  try {
+    await updateParties(id, parties);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "erro" };
+  }
+  revalidatePath(`/cases/${id}`);
+  return { ok: true };
 }
 
 export async function deleteCaseAction(formData: FormData): Promise<void> {
