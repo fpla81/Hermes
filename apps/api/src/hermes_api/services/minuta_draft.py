@@ -62,7 +62,7 @@ PROMPT_TEMPLATE = """Você é assistente jurídico do TST. Produza uma MINUTA DE
 A minuta DEVE usar apenas estes marcadores, sempre em linha própria, ANTES de cada bloco de texto a que se aplicam:
 
 - `[[CORPO]]` — texto corrido (relatórios, análises, cabeçalhos, dispositivo). Padrão.
-- `[[TRANSCRICAO1]]` — trecho LITERAL do acórdão regional ou de outras peças. PRESERVE as quebras de parágrafo do original: cada parágrafo do trecho fonte deve sair em SUA PRÓPRIA LINHA dentro do bloco (uma linha de markdown por parágrafo). NUNCA colapse vários parágrafos em uma só linha — o renderizador depende disso para formatar a leitura.
+- `[[TRANSCRICAO1]]` — trecho LITERAL do acórdão regional ou de outras peças. No dossiê, `acordao_recorrido_transcricao` e `embargos_transcricao` chegam como ARRAYS de strings (um item por parágrafo). Você DEVE emitir CADA item do array em SUA PRÓPRIA LINHA de markdown dentro do bloco `[[TRANSCRICAO1]]`, nessa ordem, sem concatenar. NUNCA junte dois parágrafos numa só linha; NUNCA omita um item; NUNCA reformule o conteúdo dos parágrafos.
 - `[[TRANSCRICAO2]]` / `[[TRANSCRICAO3]]` — transcrições aninhadas (citação dentro de citação).
 - `[[EMENTA]]` — ementa de julgado citado como precedente.
 - `[[NOTA]]` — nota de rodapé.

@@ -2,7 +2,52 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from hermes_api.services.analysis_themed import build_dossie
+from hermes_api.services.analysis_themed import (
+    _normalize_transcricoes,
+    _split_paragraphs,
+    build_dossie,
+)
+
+
+def test_split_paragraphs_from_string_with_double_newline() -> None:
+    out = _split_paragraphs("Parágrafo 1.\n\nParágrafo 2.\n\nParágrafo 3.")
+    assert out == ["Parágrafo 1.", "Parágrafo 2.", "Parágrafo 3."]
+
+
+def test_split_paragraphs_from_string_with_single_newline() -> None:
+    out = _split_paragraphs("Linha 1.\nLinha 2.")
+    assert out == ["Linha 1.", "Linha 2."]
+
+
+def test_split_paragraphs_keeps_list_intact() -> None:
+    out = _split_paragraphs(["A", "B", "  ", "C"])
+    assert out == ["A", "B", "C"]
+
+
+def test_split_paragraphs_none_or_empty() -> None:
+    assert _split_paragraphs(None) is None
+    assert _split_paragraphs("") is None
+    assert _split_paragraphs([]) is None
+    assert _split_paragraphs("   ") is None
+
+
+def test_normalize_transcricoes_converts_strings_to_lists() -> None:
+    dossie = {
+        "recursos": [
+            {
+                "temas": [
+                    {
+                        "acordao_recorrido_transcricao": "P1.\n\nP2.",
+                        "embargos_transcricao": None,
+                    }
+                ]
+            }
+        ]
+    }
+    out = _normalize_transcricoes(dossie)
+    tema = out["recursos"][0]["temas"][0]
+    assert tema["acordao_recorrido_transcricao"] == ["P1.", "P2."]
+    assert tema["embargos_transcricao"] is None
 
 
 def test_stub_returns_empty_with_note() -> None:
@@ -58,6 +103,6 @@ def test_parses_llm_json(monkeypatch) -> None:
     tema = result["recursos"][0]["temas"][0]
     assert tema["nome"] == "HORAS EXTRAS - INTERVALO INTRAJORNADA"
     assert tema["acordao_recorrido_resumo"].startswith("O Eg. TRT")
-    assert tema["acordao_recorrido_transcricao"] == "trecho literal"
+    assert tema["acordao_recorrido_transcricao"] == ["trecho literal"]
     assert tema["analise_juridica"].startswith("Conheço")
     assert result["observacoes"] == "OK"

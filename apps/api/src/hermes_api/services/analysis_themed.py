@@ -50,9 +50,9 @@ FORMATO OBRIGATÓRIO:
           "nome": "DESCRIÇÃO EM CAIXA ALTA - TERMOS SEPARADOS POR HÍFEN",  // ex.: "HORAS EXTRAS - DIVISOR APLICÁVEL"
           "admissibilidade": "admitido" | "denegado" | "parcialmente_admitido" | "prejudicado" | "nao_conhecido",  // SEGUIR o blueprint do despacho. Para AIRR, indicar a situação do RR que ele ataca.
           "acordao_recorrido_resumo": "...",        // 1 parágrafo seguindo a fórmula "O Eg. TRT [negou/deu] provimento ao Recurso Ordinário [da/do] [Reclamada/Reclamante], ao fundamento de que ... Eis as razões de decidir:"
-          "acordao_recorrido_transcricao": "...",   // trecho LITERAL do acórdão regional no ponto, para citar
+          "acordao_recorrido_transcricao": ["..."],  // ARRAY de strings — UMA ENTRADA POR PARÁGRAFO do trecho LITERAL do acórdão regional no ponto. NÃO use um único string com \\n entre parágrafos; use um array, com cada item representando um parágrafo separado.
           "embargos_resumo": "..." | null,          // se houver Embargos de Declaração no ponto
-          "embargos_transcricao": "..." | null,
+          "embargos_transcricao": ["..."] | null,   // mesmo formato: ARRAY de parágrafos, ou null
           "fundamentos_argumentativos": ["..."],    // alegações jurídicas/factuais da parte, em texto direto SEM bullets, prontos pra colar; verbos: alega, aduz, sustenta, argumenta
           "permissivos_invocados": ["..."],         // arts/súmulas/OJs/precedentes invocados pela parte, AGRUPADOS POR DIPLOMA; ex.: "arts. 5º, II e LV, da Constituição; 832 da CLT"
           "obices_aplicaveis": ["..."],             // ex.: "Súmula 126 do TST", "art. 896, § 1º-A, da CLT"
@@ -76,7 +76,7 @@ REGRAS ESTRITAS:
 6. Tema em caixa alta com " - " separando termos. NUNCA "TEMA Nº 1" ou ". ". Ex.: "DANO EXISTENCIAL - JORNADA EXTENUANTE".
 7. Use os temas do blueprint como referência. Não invente recursos/temas inexistentes nas peças.
 8. Se a data do acórdão regional não estiver clara, deixe marco_legal_hint=null.
-9. Em `acordao_recorrido_transcricao` e `embargos_transcricao`, PRESERVE as quebras de parágrafo do texto original: separe parágrafos com `\\n\\n` (no JSON, isto é, a sequência literal de dois caracteres barra-invertida-n). NÃO colapse o trecho em um único bloco — a leitura da minuta depende dessa estrutura.
+9. `acordao_recorrido_transcricao` e `embargos_transcricao` são ARRAYS DE STRINGS, com UM ITEM POR PARÁGRAFO do trecho fonte. PRESERVE rigorosamente as quebras de parágrafo originais. NUNCA emita um único string longo com tudo concatenado — sempre array, mesmo se for um parágrafo só (`["único parágrafo"]`). A leitura da minuta depende dessa estrutura.
 
 Blueprint do despacho:
 {blueprint}
@@ -126,6 +126,37 @@ def _extract_json(text: str) -> dict[str, Any] | None:
         return None
 
 
+def _split_paragraphs(value: Any) -> list[str] | None:
+    """Normaliza transcricoes para lista de parágrafos.
+
+    Aceita string (com `\\n\\n` ou `\\n` separadores), lista ou None.
+    Em caso de string, divide em parágrafos preservando conteúdo.
+    """
+    if value is None:
+        return None
+    if isinstance(value, list):
+        cleaned = [str(item).strip() for item in value if str(item).strip()]
+        return cleaned or None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        # divide em parágrafos (1+ quebras de linha)
+        paragraphs = [p.strip() for p in re.split(r"\n+", text) if p.strip()]
+        return paragraphs or None
+    return None
+
+
+def _normalize_transcricoes(dossie: dict[str, Any]) -> dict[str, Any]:
+    """Garante que campos de transcrição sejam listas de parágrafos."""
+    for recurso in dossie.get("recursos") or []:
+        for tema in recurso.get("temas") or []:
+            for field in ("acordao_recorrido_transcricao", "embargos_transcricao"):
+                normalized = _split_paragraphs(tema.get(field))
+                tema[field] = normalized
+    return dossie
+
+
 def build_dossie(
     pieces: list[dict[str, Any]],
     blueprint: dict[str, Any] | None,
@@ -147,4 +178,4 @@ def build_dossie(
     parsed = _extract_json(response)
     if parsed is None:
         return {"recursos": [], "observacoes": "resposta do LLM não veio em JSON válido"}
-    return parsed
+    return _normalize_transcricoes(parsed)
