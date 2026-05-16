@@ -62,7 +62,7 @@ PROMPT_TEMPLATE = """Você é assistente jurídico do TST. Produza uma MINUTA DE
 A minuta DEVE usar apenas estes marcadores, sempre em linha própria, ANTES de cada bloco de texto a que se aplicam:
 
 - `[[CORPO]]` — texto corrido (relatórios, análises, cabeçalhos, dispositivo). Padrão.
-- `[[TRANSCRICAO1]]` — trecho LITERAL do acórdão regional ou de outras peças.
+- `[[TRANSCRICAO1]]` — trecho LITERAL do acórdão regional ou de outras peças. PRESERVE as quebras de parágrafo do original: cada parágrafo do trecho fonte deve sair em SUA PRÓPRIA LINHA dentro do bloco (uma linha de markdown por parágrafo). NUNCA colapse vários parágrafos em uma só linha — o renderizador depende disso para formatar a leitura.
 - `[[TRANSCRICAO2]]` / `[[TRANSCRICAO3]]` — transcrições aninhadas (citação dentro de citação).
 - `[[EMENTA]]` — ementa de julgado citado como precedente.
 - `[[NOTA]]` — nota de rodapé.
@@ -342,7 +342,9 @@ TEMA - TERCEIRIZAÇÃO - RESPONSABILIDADE SUBSIDIÁRIA
 O Eg. TRT da 4ª Região negou provimento ao Recurso Ordinário da Reclamada, ao fundamento de que a prova produzida demonstrou atividade-fim bancária e descumprimento do dever de fiscalização. Eis os termos do acórdão regional:
 
 [[TRANSCRICAO1]]
-A prova dos autos revela...
+A prova dos autos revela que a Reclamante exercia atividades típicas de bancário, em especial atendimento ao público, captação de clientes e oferta de produtos financeiros.
+Tais atividades, longe de se reduzirem ao escopo de mera prestação acessória, integravam o núcleo de atividade-fim da tomadora de serviços.
+Configurada a terceirização ilícita, impõe-se reconhecer o vínculo direto, na forma da Súmula nº 331, I, do TST.
 
 [[CORPO]]
 No Recurso de Revista, a Reclamada sustentou que a prova seria frágil e contraditória, que não houve atividade-fim bancária, que a contratação decorreu de licitação válida e que não seria possível aplicar a Orientação Jurisprudencial nº 383 da SBDI-1 do TST. Apontou violação aos arts. 5º, II e LV, e 37, II e XXI, da Constituição; e 71 da Lei nº 8.666/93. Indicou contrariedade à Súmula nº 331 do TST. Colacionou arestos à divergência.

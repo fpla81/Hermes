@@ -76,6 +76,7 @@ REGRAS ESTRITAS:
 6. Tema em caixa alta com " - " separando termos. NUNCA "TEMA Nº 1" ou ". ". Ex.: "DANO EXISTENCIAL - JORNADA EXTENUANTE".
 7. Use os temas do blueprint como referência. Não invente recursos/temas inexistentes nas peças.
 8. Se a data do acórdão regional não estiver clara, deixe marco_legal_hint=null.
+9. Em `acordao_recorrido_transcricao` e `embargos_transcricao`, PRESERVE as quebras de parágrafo do texto original: separe parágrafos com `\\n\\n` (no JSON, isto é, a sequência literal de dois caracteres barra-invertida-n). NÃO colapse o trecho em um único bloco — a leitura da minuta depende dessa estrutura.
 
 Blueprint do despacho:
 {blueprint}
