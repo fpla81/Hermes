@@ -301,3 +301,24 @@ export async function deletePieceAction(formData: FormData): Promise<void> {
   await deleteStructuredPiece(caseId, pieceId);
   revalidatePath(`/cases/${caseId}`);
 }
+
+export interface LearnState {
+  ok?: boolean;
+  learned?: number;
+  error?: string;
+}
+
+export async function learnFundamentosAction(
+  _prev: LearnState,
+  formData: FormData,
+): Promise<LearnState> {
+  const caseId = String(formData.get("case_id") ?? "");
+  if (!caseId) return { error: "case_id ausente" };
+  const { learnFundamentos } = await import("@/lib/fundamentos");
+  try {
+    const res = await learnFundamentos(caseId);
+    return { ok: true, learned: res.learned };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "erro" };
+  }
+}

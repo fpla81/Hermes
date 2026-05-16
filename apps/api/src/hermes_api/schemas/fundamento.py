@@ -30,3 +30,11 @@ class FundamentoRead(BaseModel):
 class LearnResult(BaseModel):
     learned: int
     fundamentos: list[FundamentoRead]
+
+
+class FundamentoUpdate(BaseModel):
+    tema: str | None = Field(default=None, max_length=255)
+    titulo: str | None = Field(default=None, max_length=255)
+    corpo_md: str | None = None
+    tags: list[str] | None = None
+    resumo: str | None = None

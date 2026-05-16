@@ -24,6 +24,9 @@ export async function apiFetch(
   const headers = new Headers(init.headers);
   headers.set("X-Hermes-Secret", SECRET);
   headers.set("X-Hermes-User-Id", userKey);
+  if (session?.user?.role) {
+    headers.set("X-Hermes-User-Role", session.user.role);
+  }
   if (init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }

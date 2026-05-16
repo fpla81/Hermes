@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFil
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..auth import current_user_id
+from ..auth import current_user_id, require_manager
 from ..config import get_settings
 from ..db import get_db
 from ..models.case import Case, CaseStatus
@@ -435,6 +435,7 @@ async def generate_minuta_draft(
 async def learn_fundamentos(
     case_id: uuid.UUID,
     user_id: str = Depends(current_user_id),
+    _: str = Depends(require_manager),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Extrai fundamentações da minuta final e salva no banco do usuário."""

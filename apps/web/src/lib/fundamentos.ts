@@ -1,26 +1,13 @@
+import "server-only";
+
 import { apiFetch, apiJson } from "./api";
+import type {
+  Fundamento,
+  FundamentoUpdate,
+  LearnResult,
+} from "./fundamentos-types";
 
-export interface Fundamento {
-  id: string;
-  tema: string;
-  titulo: string;
-  corpo_md: string;
-  tags: string[] | null;
-  resumo: string | null;
-  source_case_id: string | null;
-  usage_count: number;
-  created_at: string;
-}
-
-export interface LearnResult {
-  learned: number;
-  fundamentos: Array<{
-    id: string;
-    tema: string;
-    titulo: string;
-    resumo: string | null;
-  }>;
-}
+export type { Fundamento, FundamentoUpdate, LearnResult } from "./fundamentos-types";
 
 export async function listFundamentos(opts?: {
   q?: string;
@@ -36,6 +23,16 @@ export async function listFundamentos(opts?: {
 export async function deleteFundamento(id: string): Promise<void> {
   const res = await apiFetch(`/fundamentos/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(`delete falhou: ${res.status}`);
+}
+
+export async function updateFundamento(
+  id: string,
+  patch: FundamentoUpdate,
+): Promise<Fundamento> {
+  return apiJson<Fundamento>(`/fundamentos/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(patch),
+  });
 }
 
 export async function learnFundamentos(caseId: string): Promise<LearnResult> {

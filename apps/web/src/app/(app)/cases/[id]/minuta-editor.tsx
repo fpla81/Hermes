@@ -1,13 +1,13 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
-
-import { learnFundamentos } from "@/lib/fundamentos";
+import { useActionState, useState } from "react";
 
 import {
   generateMinutaDraftAction,
+  learnFundamentosAction,
   saveMinutaAction,
   triggerDocxAction,
+  type LearnState,
   type MinutaDraftState,
   type SaveMinutaState,
 } from "../actions";
@@ -21,9 +21,16 @@ interface Props {
   initial: string;
   hasMinuta: boolean;
   hasDocx: boolean;
+  canLearn: boolean;
 }
 
-export function MinutaEditor({ caseId, initial, hasMinuta, hasDocx }: Props) {
+export function MinutaEditor({
+  caseId,
+  initial,
+  hasMinuta,
+  hasDocx,
+  canLearn,
+}: Props) {
   const [text, setText] = useState(initial);
   const [draftState, draftFormAction, draftPending] = useActionState(
     generateMinutaDraftAction,
@@ -33,9 +40,10 @@ export function MinutaEditor({ caseId, initial, hasMinuta, hasDocx }: Props) {
     saveMinutaAction,
     INITIAL_SAVE,
   );
-  const [learnMsg, setLearnMsg] = useState<string | null>(null);
-  const [learnError, setLearnError] = useState<string | null>(null);
-  const [learning, startLearn] = useTransition();
+  const [learnState, learnFormAction, learning] = useActionState(
+    learnFundamentosAction,
+    {} as LearnState,
+  );
   const [showRaw, setShowRaw] = useState(false);
 
   // Quando o rascunho chega, oferece substituir
@@ -43,22 +51,11 @@ export function MinutaEditor({ caseId, initial, hasMinuta, hasDocx }: Props) {
     setText(draftState.text);
   }
 
-  const handleLearn = () => {
-    setLearnMsg(null);
-    setLearnError(null);
-    startLearn(async () => {
-      try {
-        const res = await learnFundamentos(caseId);
-        setLearnMsg(
-          res.learned > 0
-            ? `${res.learned} fundamentação${res.learned > 1 ? "ões" : ""} guardada${res.learned > 1 ? "s" : ""} na base.`
-            : "Nenhuma fundamentação extraída — verifique se a minuta está salva e bate com o dossiê.",
-        );
-      } catch (e) {
-        setLearnError(e instanceof Error ? e.message : "erro desconhecido");
-      }
-    });
-  };
+  const learnMsg = learnState.ok
+    ? learnState.learned && learnState.learned > 0
+      ? `${learnState.learned} fundamentação${learnState.learned > 1 ? "ões" : ""} guardada${learnState.learned > 1 ? "s" : ""} na base.`
+      : "Nenhuma fundamentação extraída — verifique se a minuta está salva e bate com o dossiê."
+    : null;
 
   return (
     <section className="space-y-3 rounded-md border p-4">
@@ -114,28 +111,30 @@ export function MinutaEditor({ caseId, initial, hasMinuta, hasDocx }: Props) {
           </a>
         )}
 
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleLearn}
-            disabled={!hasMinuta || learning}
-            title={
-              hasMinuta
-                ? "Extrai as fundamentações da minuta e salva na base do gabinete"
-                : "Salve a minuta primeiro"
-            }
-            className="inline-flex h-9 items-center rounded-md border border-emerald-300 bg-emerald-50 px-3 text-sm font-medium text-emerald-900 hover:bg-emerald-100 disabled:opacity-50"
-          >
-            {learning ? "Aprendendo…" : "Aprender fundamentação"}
-          </button>
-        </div>
+        {canLearn && (
+          <form action={learnFormAction} className="ml-auto">
+            <input type="hidden" name="case_id" value={caseId} />
+            <button
+              type="submit"
+              disabled={!hasMinuta || learning}
+              title={
+                hasMinuta
+                  ? "Extrai as fundamentações da minuta e salva na base do gabinete"
+                  : "Salve a minuta primeiro"
+              }
+              className="inline-flex h-9 items-center rounded-md border border-emerald-300 bg-emerald-50 px-3 text-sm font-medium text-emerald-900 hover:bg-emerald-100 disabled:opacity-50"
+            >
+              {learning ? "Aprendendo…" : "Aprender fundamentação"}
+            </button>
+          </form>
+        )}
       </div>
 
       {learnMsg && (
         <p className="text-xs text-emerald-700">{learnMsg}</p>
       )}
-      {learnError && (
-        <p className="text-xs text-destructive">{learnError}</p>
+      {learnState.error && (
+        <p className="text-xs text-destructive">{learnState.error}</p>
       )}
 
       <form action={saveFormAction} className="space-y-3">

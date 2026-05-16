@@ -16,6 +16,8 @@ HEADERS = {
     "X-Hermes-Secret": "test-secret",
     "X-Hermes-User-Id": "user-1",
 }
+MANAGER_HEADERS = {**HEADERS, "X-Hermes-User-Role": "manager"}
+USER_HEADERS = {**HEADERS, "X-Hermes-User-Role": "user"}
 
 
 @pytest.mark.asyncio
@@ -225,3 +227,89 @@ def test_list_fundamentos_endpoint_filters_by_user(client) -> None:
     titles = {f["titulo"] for f in body}
     assert "meu" in titles
     assert "alheio" not in titles
+
+
+def _insert_fundamento(session_dep, user_id="user-1") -> str:
+    import asyncio
+
+    captured: dict = {}
+
+    async def run() -> None:
+        async for db in session_dep():
+            f = Fundamento(
+                user_id=user_id,
+                tema="DANO MORAL",
+                titulo="t",
+                corpo_md="c",
+                tags=[],
+                resumo="r",
+            )
+            db.add(f)
+            await db.commit()
+            await db.refresh(f)
+            captured["id"] = str(f.id)
+            return
+
+    asyncio.get_event_loop().run_until_complete(run())
+    return captured["id"]
+
+
+def test_delete_forbidden_for_plain_user(client) -> None:
+    from hermes_api.db import get_db
+    from hermes_api.main import app
+
+    session_dep = app.dependency_overrides[get_db]
+    fid = _insert_fundamento(session_dep)
+    res = client.delete(f"/fundamentos/{fid}", headers=USER_HEADERS)
+    assert res.status_code == 403
+
+
+def test_delete_allowed_for_manager(client) -> None:
+    from hermes_api.db import get_db
+    from hermes_api.main import app
+
+    session_dep = app.dependency_overrides[get_db]
+    fid = _insert_fundamento(session_dep)
+    res = client.delete(f"/fundamentos/{fid}", headers=MANAGER_HEADERS)
+    assert res.status_code == 204
+
+
+def test_update_forbidden_for_plain_user(client) -> None:
+    from hermes_api.db import get_db
+    from hermes_api.main import app
+
+    session_dep = app.dependency_overrides[get_db]
+    fid = _insert_fundamento(session_dep)
+    res = client.put(
+        f"/fundamentos/{fid}",
+        json={"titulo": "novo"},
+        headers=USER_HEADERS,
+    )
+    assert res.status_code == 403
+
+
+def test_update_allowed_for_manager(client) -> None:
+    from hermes_api.db import get_db
+    from hermes_api.main import app
+
+    session_dep = app.dependency_overrides[get_db]
+    fid = _insert_fundamento(session_dep)
+    res = client.put(
+        f"/fundamentos/{fid}",
+        json={"titulo": "novo", "tags": ["x", "y"]},
+        headers=MANAGER_HEADERS,
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["titulo"] == "novo"
+    assert body["tags"] == ["x", "y"]
+
+
+def test_learn_endpoint_forbidden_for_plain_user(client) -> None:
+    """POST /cases/{id}/learn-fundamentos exige manager."""
+    import uuid as _uuid
+
+    fake = _uuid.uuid4()
+    res = client.post(f"/cases/{fake}/learn-fundamentos", headers=USER_HEADERS)
+    # 403 antes mesmo de o 404 ser checado, porque require_manager roda primeiro
+    assert res.status_code == 403

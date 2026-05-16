@@ -19,6 +19,7 @@ interface Props {
   caseData: Case;
   pieces: StructuredPiece[];
   blueprint: DespachoBlueprint | null;
+  canLearn: boolean;
 }
 
 interface StepDef {
@@ -77,7 +78,13 @@ function pickInitialStep(ctx: Ctx, fromUrl: StepKey | null): StepKey {
   return "minuta";
 }
 
-export function CaseWizard({ caseId, caseData, pieces, blueprint }: Props) {
+export function CaseWizard({
+  caseId,
+  caseData,
+  pieces,
+  blueprint,
+  canLearn,
+}: Props) {
   const router = useRouter();
   const search = useSearchParams();
   const [, startTransition] = useTransition();
@@ -213,6 +220,7 @@ export function CaseWizard({ caseId, caseData, pieces, blueprint }: Props) {
               initial={caseData.minuta_md ?? ""}
               hasMinuta={caseData.has_minuta}
               hasDocx={caseData.has_docx}
+              canLearn={canLearn}
             />
           </div>
         )}

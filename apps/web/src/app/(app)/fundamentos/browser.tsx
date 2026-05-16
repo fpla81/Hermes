@@ -3,7 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { deleteFundamento, type Fundamento } from "@/lib/fundamentos";
+import type { Fundamento } from "@/lib/fundamentos-types";
+
+import { deleteFundamentoAction } from "./actions";
+import { FundamentoEditorDialog } from "./editor-dialog";
 
 const inputClass =
   "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
@@ -12,16 +15,19 @@ export function FundamentosBrowser({
   initialQuery,
   initialTema,
   items,
+  canEdit,
 }: {
   initialQuery: string;
   initialTema: string;
   items: Fundamento[];
+  canEdit: boolean;
 }) {
   const router = useRouter();
   const [q, setQ] = useState(initialQuery);
   const [tema, setTema] = useState(initialTema);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [removing, setRemoving] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Fundamento | null>(null);
   const [, startTransition] = useTransition();
 
   const onSubmit = (e: React.FormEvent) => {
@@ -39,7 +45,9 @@ export function FundamentosBrowser({
     if (!confirm("Remover esta fundamentação?")) return;
     setRemoving(id);
     try {
-      await deleteFundamento(id);
+      const fd = new FormData();
+      fd.set("id", id);
+      await deleteFundamentoAction({}, fd);
       startTransition(() => router.refresh());
     } finally {
       setRemoving(null);
@@ -70,10 +78,17 @@ export function FundamentosBrowser({
         </button>
       </form>
 
+      {!canEdit && (
+        <p className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          Modo somente leitura: para editar ou remover fundamentações,
+          peça ao administrador o papel de gerente.
+        </p>
+      )}
+
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Nenhuma fundamentação registrada. Use o botão &quot;Aprender fundamentação&quot;
-          ao final de uma minuta para começar a base.
+          Nenhuma fundamentação registrada. Gerentes podem usar &quot;Aprender
+          fundamentação&quot; ao final de uma minuta para começar a base.
         </p>
       ) : (
         <ul className="space-y-3">
@@ -88,14 +103,25 @@ export function FundamentosBrowser({
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>usos: {f.usage_count}</span>
-                  <button
-                    type="button"
-                    onClick={() => onDelete(f.id)}
-                    disabled={removing === f.id}
-                    className="rounded border px-2 py-0.5 text-xs hover:bg-accent disabled:opacity-50"
-                  >
-                    {removing === f.id ? "Removendo…" : "Remover"}
-                  </button>
+                  {canEdit && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setEditing(f)}
+                        className="rounded border px-2 py-0.5 text-xs hover:bg-accent"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDelete(f.id)}
+                        disabled={removing === f.id}
+                        className="rounded border px-2 py-0.5 text-xs hover:bg-accent disabled:opacity-50"
+                      >
+                        {removing === f.id ? "Removendo…" : "Remover"}
+                      </button>
+                    </>
+                  )}
                 </div>
               </header>
               {f.resumo && <p className="text-sm">{f.resumo}</p>}
@@ -128,6 +154,14 @@ export function FundamentosBrowser({
             </li>
           ))}
         </ul>
+      )}
+
+      {editing && (
+        <FundamentoEditorDialog
+          open={!!editing}
+          onClose={() => setEditing(null)}
+          fundamento={editing}
+        />
       )}
     </div>
   );

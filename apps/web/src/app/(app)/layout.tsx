@@ -3,9 +3,10 @@ import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { FileText, BookOpen, ScrollText, Settings } from "lucide-react";
+import { FileText, BookOpen, ScrollText, Settings, Users } from "lucide-react";
+import { isAdmin } from "@/lib/roles";
 
-const nav: { href: Route; label: string; icon: typeof FileText }[] = [
+const baseNav: { href: Route; label: string; icon: typeof FileText }[] = [
   { href: "/cases", label: "Casos", icon: FileText },
   { href: "/fundamentos", label: "Fundamentos", icon: BookOpen },
   { href: "/templates", label: "Templates", icon: ScrollText },
@@ -21,6 +22,12 @@ export default async function AppLayout({
   if (!session?.user) {
     redirect("/sign-in");
   }
+  const nav = isAdmin(session.user.role)
+    ? [
+        ...baseNav,
+        { href: "/admin/users" as Route, label: "Usuários", icon: Users },
+      ]
+    : baseNav;
 
   return (
     <div className="flex min-h-screen">

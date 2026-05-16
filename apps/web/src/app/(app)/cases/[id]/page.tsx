@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 
+import { auth } from "@/lib/auth";
 import { getCase, listStructuredPieces } from "@/lib/cases";
 import type { DespachoBlueprint, StructuredPiece } from "@/lib/cases";
+import { isManager } from "@/lib/roles";
 
 import { CasePolling } from "./polling";
 import { CaseWizard } from "./wizard";
@@ -51,6 +53,8 @@ export default async function CaseDetailPage({
   const pieces = await fetchPieces(id);
   const despacho = pieces.find((p) => p.tipo === "despacho_admissibilidade");
   const blueprint: DespachoBlueprint | null = despacho?.blueprint ?? null;
+  const session = await auth();
+  const canLearn = isManager(session?.user?.role);
 
   return (
     <div className="space-y-6">
@@ -77,6 +81,7 @@ export default async function CaseDetailPage({
         caseData={c}
         pieces={pieces}
         blueprint={blueprint}
+        canLearn={canLearn}
       />
     </div>
   );

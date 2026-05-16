@@ -1,4 +1,6 @@
+import { auth } from "@/lib/auth";
 import { listFundamentos } from "@/lib/fundamentos";
+import { isManager } from "@/lib/roles";
 
 import { FundamentosBrowser } from "./browser";
 
@@ -13,7 +15,9 @@ export default async function FundamentosPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
+  const session = await auth();
   const items = await listFundamentos({ q: sp.q, tema: sp.tema });
+  const canEdit = isManager(session?.user?.role);
 
   return (
     <div className="space-y-4">
@@ -29,6 +33,7 @@ export default async function FundamentosPage({
         initialQuery={sp.q ?? ""}
         initialTema={sp.tema ?? ""}
         items={items}
+        canEdit={canEdit}
       />
     </div>
   );

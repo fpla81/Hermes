@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..auth import current_user_id
+from ..auth import current_user_id, require_manager
 from ..db import get_db
 from ..models.fundamento import Fundamento
-from ..schemas.fundamento import FundamentoRead
+from ..schemas.fundamento import FundamentoRead, FundamentoUpdate
 
 router = APIRouter(prefix="/fundamentos", tags=["fundamentos"])
 
@@ -48,10 +48,38 @@ async def get_fundamento(
     return f
 
 
+@router.put("/{fundamento_id}", response_model=FundamentoRead)
+async def update_fundamento(
+    fundamento_id: uuid.UUID,
+    payload: FundamentoUpdate,
+    user_id: str = Depends(current_user_id),
+    _: str = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+) -> Fundamento:
+    f = await db.get(Fundamento, fundamento_id)
+    if f is None or f.user_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    data = payload.model_dump(exclude_none=True)
+    if "tema" in data:
+        f.tema = " ".join(data["tema"].upper().split())
+    if "titulo" in data:
+        f.titulo = data["titulo"]
+    if "corpo_md" in data:
+        f.corpo_md = data["corpo_md"]
+    if "tags" in data:
+        f.tags = data["tags"]
+    if "resumo" in data:
+        f.resumo = data["resumo"]
+    await db.commit()
+    await db.refresh(f)
+    return f
+
+
 @router.delete("/{fundamento_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_fundamento(
     fundamento_id: uuid.UUID,
     user_id: str = Depends(current_user_id),
+    _: str = Depends(require_manager),
     db: AsyncSession = Depends(get_db),
 ) -> None:
     f = await db.get(Fundamento, fundamento_id)
