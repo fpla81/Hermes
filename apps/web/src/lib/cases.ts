@@ -14,6 +14,7 @@ export type CaseStatus =
 
 export interface AnalysisTema {
   nome: string;
+  blueprint_tema?: string | null;
   fundamentos_argumentativos: string[];
   permissivos_invocados: string[];
   obices_aplicaveis: string[];

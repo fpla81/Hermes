@@ -36,8 +36,16 @@ export function DossiePanel({ dossie }: { dossie: AnalysisDossie }) {
       </p>
     );
   }
+  const obs = dossie.observacoes ?? "";
+  const hasAlignmentWarning = obs.startsWith("Alinhamento com o despacho");
   return (
     <div className="space-y-6">
+      {hasAlignmentWarning && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+          <p className="font-medium">Atenção ao alinhamento com o despacho</p>
+          <p className="mt-1 whitespace-pre-wrap">{obs}</p>
+        </div>
+      )}
       {dossie.recursos.map((r, i) => (
         <article key={i} className="space-y-3 rounded-md border p-4">
           <header>
@@ -47,7 +55,14 @@ export function DossiePanel({ dossie }: { dossie: AnalysisDossie }) {
           </header>
           {(r.temas || []).map((t, j) => (
             <section key={j} className="space-y-2 rounded border bg-muted/20 p-3">
-              <h4 className="text-sm font-semibold">{t.nome}</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold">{t.nome}</h4>
+                {t.blueprint_tema === null && (
+                  <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-900">
+                    fora do despacho
+                  </span>
+                )}
+              </div>
               <ListBlock label="Fundamentos argumentativos" items={t.fundamentos_argumentativos} />
               <ListBlock label="Permissivos invocados" items={t.permissivos_invocados} />
               <ListBlock label="Óbices aplicáveis" items={t.obices_aplicaveis} />
@@ -62,9 +77,9 @@ export function DossiePanel({ dossie }: { dossie: AnalysisDossie }) {
           ))}
         </article>
       ))}
-      {dossie.observacoes && (
+      {obs && !hasAlignmentWarning && (
         <p className="text-xs text-muted-foreground">
-          <strong>Observações:</strong> {dossie.observacoes}
+          <strong>Observações:</strong> {obs}
         </p>
       )}
     </div>
