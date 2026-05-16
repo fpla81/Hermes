@@ -86,6 +86,55 @@ def test_prompt_contains_compact_agravo_interno_formula() -> None:
     )
 
 
+def test_prompt_includes_fundamentos_section(monkeypatch) -> None:
+    """Quando passamos fundamentos_por_tema, o prompt enviado ao LLM
+    deve conter os títulos/resumos para guiar a redação."""
+    from hermes_api.config import get_settings
+
+    monkeypatch.setenv("GEMINI_API_KEY", "fake-key")
+    get_settings.cache_clear()
+
+    captured = {}
+
+    class FakeProvider:
+        def analyze(self, text: str) -> str:
+            captured["prompt"] = text
+            return "[[CORPO]]\nTEMA - X\n[[CORPO]]\nDISPOSITIVO\nfim."
+
+    with patch(
+        "hermes_api.services.minuta_draft.get_llm_provider", return_value=FakeProvider()
+    ):
+        build_minuta_draft(
+            "0001234-56.2023.5.06.0020",
+            [{"tipo": "recurso_revista", "parte": "reclamada", "text": "x"}],
+            {"recursos": [{"tipo": "recurso_revista", "parte": "reclamada", "temas": []}]},
+            fundamentos_por_tema={
+                "DANO MORAL - QUANTUM": [
+                    {
+                        "titulo": "Critérios de proporcionalidade",
+                        "resumo": "Quantum deve observar proporcionalidade e razoabilidade.",
+                        "corpo_md": "[[CORPO]]\nConheço do RR e dou parcial provimento...",
+                        "tags": ["dano moral", "quantum"],
+                    }
+                ]
+            },
+        )
+
+    p = captured["prompt"]
+    assert "FUNDAMENTAÇÕES SUGERIDAS POR TEMA" in p
+    assert "DANO MORAL - QUANTUM" in p
+    assert "Critérios de proporcionalidade" in p
+    assert "proporcionalidade e razoabilidade" in p
+
+
+def test_prompt_fundamentos_block_handles_empty() -> None:
+    """Sem fundamentos, o bloco fica com mensagem padrão (não quebra o prompt)."""
+    from hermes_api.services.minuta_draft import _format_fundamentos_block
+
+    assert "nenhum modelo aderente" in _format_fundamentos_block(None)
+    assert "nenhum modelo aderente" in _format_fundamentos_block({})
+
+
 def test_compute_marco_legal_lei_13015() -> None:
     assert compute_marco_legal("01/01/2013") == (
         "INTERPOSTO ANTERIORMENTE À VIGÊNCIA DA LEI Nº 13.015/2014"

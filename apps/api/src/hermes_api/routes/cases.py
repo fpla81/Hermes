@@ -9,6 +9,7 @@ from ..auth import current_user_id
 from ..config import get_settings
 from ..db import get_db
 from ..models.case import Case, CaseStatus
+from ..models.fundamento import Fundamento
 from ..schemas.case import (
     CaseCreate,
     CaseRead,
@@ -20,6 +21,11 @@ from ..schemas.case import (
     StructuredPieceIn,
 )
 from ..services.despacho import parse_despacho
+from ..services.fundamentos import (
+    extract_from_minuta,
+    increment_usage,
+    search_for_theme,
+)
 from ..services.manifest import build_manifest
 from ..services.minuta_draft import build_minuta_draft
 from ..services.prepared import (
@@ -387,13 +393,87 @@ async def generate_minuta_draft(
     acordao_data: str | None = None
     if case.despacho_blueprint and isinstance(case.despacho_blueprint, dict):
         acordao_data = case.despacho_blueprint.get("acordao_regional_data")
+
+    # Recupera fundamentos do usuário aderentes a cada tema do dossiê
+    # e os passa pro prompt da minuta. Incrementa usage_count.
+    fundamentos_por_tema: dict[str, list[dict]] = {}
+    used_ids: list[uuid.UUID] = []
+    dossie = case.analysis_dossie or {}
+    for recurso in dossie.get("recursos") or []:
+        for tema in recurso.get("temas") or []:
+            tema_nome = str(tema.get("nome", "")).strip()
+            if not tema_nome:
+                continue
+            tags_hint = list(tema.get("permissivos_invocados") or [])[:5]
+            matches = await search_for_theme(db, user_id, tema_nome, tags_hint, limit=3)
+            if matches:
+                fundamentos_por_tema[tema_nome] = [
+                    {
+                        "titulo": f.titulo,
+                        "resumo": f.resumo,
+                        "corpo_md": f.corpo_md,
+                        "tags": f.tags or [],
+                    }
+                    for f in matches
+                ]
+                used_ids.extend(f.id for f in matches)
+    if used_ids:
+        await increment_usage(db, used_ids)
+        await db.commit()
+
     draft = build_minuta_draft(
         case.numero_processo,
         pieces,
         case.analysis_dossie,
         acordao_regional_data=acordao_data,
+        fundamentos_por_tema=fundamentos_por_tema or None,
     )
     return {"text": draft}
+
+
+@router.post("/{case_id}/learn-fundamentos")
+async def learn_fundamentos(
+    case_id: uuid.UUID,
+    user_id: str = Depends(current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Extrai fundamentações da minuta final e salva no banco do usuário."""
+    case = await _get_owned_case(case_id, user_id, db)
+    if not case.minuta_md:
+        raise HTTPException(
+            status_code=status.HTTP_412_PRECONDITION_FAILED,
+            detail="salve a minuta antes de aprender",
+        )
+    items = extract_from_minuta(case)
+    created: list[Fundamento] = []
+    for item in items:
+        f = Fundamento(
+            user_id=user_id,
+            tema=item.tema,
+            titulo=item.titulo,
+            corpo_md=item.corpo_md,
+            tags=item.tags,
+            resumo=item.resumo,
+            source_case_id=item.source_case_id,
+        )
+        db.add(f)
+        created.append(f)
+    if created:
+        await db.commit()
+        for f in created:
+            await db.refresh(f)
+    return {
+        "learned": len(created),
+        "fundamentos": [
+            {
+                "id": str(f.id),
+                "tema": f.tema,
+                "titulo": f.titulo,
+                "resumo": f.resumo,
+            }
+            for f in created
+        ],
+    }
 
 
 @router.post("/{case_id}/minuta", response_model=CaseRead)

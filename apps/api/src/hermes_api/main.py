@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import __version__
 from .config import get_settings
-from .routes import bemtevi, cases, debug, health, ingest
+from .routes import bemtevi, cases, debug, fundamentos, health, ingest
 
 settings = get_settings()
 
@@ -24,6 +24,7 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(cases.router)
+app.include_router(fundamentos.router)
 app.include_router(bemtevi.router)
 app.include_router(ingest.router)
 app.include_router(debug.router)

@@ -406,6 +406,16 @@ Nego provimento ao Agravo Interno. A decisão monocrática se mantém pelos pró
 
 (Note: Agravo Interno em julgamento → RR no passado; AIRR + Agravo Interno colapsados em UMA frase com a fórmula compacta unificada. Frase de transição: "Esses, os termos do acórdão regional:". Cada cenário usou uma fórmula de transição diferente — IMITE essa rotação.)
 
+# FUNDAMENTAÇÕES SUGERIDAS POR TEMA
+
+A base do gabinete contém fundamentações já redigidas em casos análogos.
+Quando relevantes ao tema corrente, **use-as como ponto de partida** —
+adapte ao caso concreto, ajustando partes, datas, valores e nuances
+factuais. Se nenhuma das sugestões se aplicar ao tema atual, ignore-as e
+redija do zero. NUNCA copie cegamente; sempre confira aderência factual.
+
+{fundamentos_block}
+
 # DIRETIVA FINAL
 
 Devolva APENAS o markdown da minuta. Sem prefácio, sem código, sem comentários. Comece na primeira linha com `[[CORPO]]`. Termine com a conclusão do `DISPOSITIVO`.
@@ -461,12 +471,35 @@ def _validate_minuta_structure(text: str) -> list[str]:
     return problems
 
 
+def _format_fundamentos_block(
+    fundamentos_por_tema: dict[str, list[dict[str, Any]]] | None,
+) -> str:
+    if not fundamentos_por_tema:
+        return "(nenhum modelo aderente na base do gabinete para os temas deste caso.)"
+    parts: list[str] = []
+    for tema, items in fundamentos_por_tema.items():
+        if not items:
+            continue
+        parts.append(f"## Tema: {tema}")
+        for i, it in enumerate(items, start=1):
+            titulo = it.get("titulo") or "(sem título)"
+            resumo = it.get("resumo") or ""
+            corpo = it.get("corpo_md") or ""
+            parts.append(f"### Modelo {i} — {titulo}")
+            if resumo:
+                parts.append(f"_{resumo}_")
+            parts.append(corpo)
+            parts.append("")
+    return "\n".join(parts).strip() or "(nenhum modelo aderente.)"
+
+
 def build_minuta_draft(
     numero_processo: str,
     pieces: list[dict[str, Any]],
     dossie: dict[str, Any] | None,
     *,
     acordao_regional_data: str | None = None,
+    fundamentos_por_tema: dict[str, list[dict[str, Any]]] | None = None,
 ) -> str:
     provider = get_llm_provider()
     if isinstance(provider, StubProvider) or not dossie or not dossie.get("recursos"):
@@ -474,11 +507,13 @@ def build_minuta_draft(
     import json as _json
 
     marco_legal = compute_marco_legal(acordao_regional_data) or "(não informado)"
+    fundamentos_block = _format_fundamentos_block(fundamentos_por_tema)
 
     prompt = (
         PROMPT_TEMPLATE.replace("{dossie}", _json.dumps(dossie, ensure_ascii=False, indent=2))
         .replace("{numero}", numero_processo)
         .replace("{marco_legal}", marco_legal)
+        .replace("{fundamentos_block}", fundamentos_block)
     )
     try:
         raw = provider.analyze(prompt).strip()
