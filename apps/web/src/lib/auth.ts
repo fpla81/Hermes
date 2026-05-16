@@ -32,14 +32,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
       }
-      // Lê role do DB. Carrega no primeiro login e quando explicitamente
-      // pedido (admin alterou role e disparou update).
-      if ((user || trigger === "update" || !token.role) && token.email) {
+      // Relê role do banco a cada refresh — assim mudanças via
+      // /admin/users ou nas envs HERMES_ADMINS / HERMES_MANAGERS
+      // entram em vigor na próxima request, sem precisar logar de novo.
+      if (token.email) {
         try {
           token.role = await upsertUserAndGetRole(token.email as string);
         } catch {
