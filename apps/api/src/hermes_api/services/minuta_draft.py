@@ -318,6 +318,14 @@ Na minuta:
 - `Código Civil` por extenso. NUNCA `CC`.
 - Funções processuais aparecem em prosa apenas dentro da forma neutra "a parte Reclamante / Reclamada" (vide regra de linguagem neutra acima). Em títulos de cabeçalho ainda em caixa alta: "PARTE RECLAMADA", "PARTE RECLAMANTE".
 - Caixa alta preservada em títulos: "PARTE RECLAMADA", não "PARTE Reclamada".
+- **Capitalização editorial obrigatória em prosa**: nomes de partes e
+  recursos sempre com inicial maiúscula em cada palavra significativa.
+  CORRETO: `Recurso de Revista`, `Agravo de Instrumento`, `Agravo Interno`,
+  `Embargos de Declaração`, `Reclamante`, `Reclamada`, `Embargante`,
+  `Ministério Público do Trabalho`. INCORRETO: `recurso de revista`,
+  `agravo de instrumento`, `agravo interno`, `embargos de declaração`,
+  `reclamante`, `embargante`. Não usar tudo em caixa alta dentro de
+  prosa — só em títulos de cabeçalho.
 - NÃO numerar temas. Use `TEMA - DANO EXISTENCIAL - JORNADA EXTENUANTE`, nunca `TEMA Nº 1 - DANO EXISTENCIAL`.
 - Separar termos do tema com ` - ` (espaço + hífen + espaço). NUNCA com `. ` (ponto-espaço).
 - Latinismos (`in casu`, `data venia`, etc.) e frases decisórias (`conheço`, `dou provimento`) NÃO precisam de markdown — o renderizador formata automaticamente.

@@ -1,6 +1,7 @@
 import { asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
+import { PageHeader } from "@/components/layout/page-header";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { auth } from "@/lib/auth";
@@ -27,14 +28,12 @@ export default async function AdminUsersPage() {
     .orderBy(asc(users.email));
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Usuários</h1>
-        <p className="text-sm text-muted-foreground">
-          Atribua papéis. Gerentes podem extrair fundamentações e editar a base
-          do gabinete. Demais usuários geram e editam apenas minutas.
-        </p>
-      </header>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Administração"
+        title="Usuários"
+        description="Atribua papéis. Gerentes podem extrair fundamentações e editar a base do gabinete. Demais usuários geram e editam apenas minutas."
+      />
 
       <UsersTable
         rows={rows}

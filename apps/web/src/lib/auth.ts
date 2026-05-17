@@ -24,15 +24,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(creds) {
         const email = String(creds?.email ?? "").trim().toLowerCase();
         const password = String(creds?.password ?? "");
-        // DEBUG: remove depois que login funcionar
-        console.log("[auth.authorize] tentativa:", {
-          email,
-          passwordLen: password.length,
-          expectedLen: SHARED_PASSWORD.length,
-          allowed: ALLOWED_EMAILS,
-          emailInAllow: ALLOWED_EMAILS.includes(email),
-          passwordMatch: password === SHARED_PASSWORD,
-        });
         if (!email || password !== SHARED_PASSWORD) return null;
         if (!ALLOWED_EMAILS.includes(email)) return null;
         return { id: email, email, name: email };

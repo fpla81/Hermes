@@ -2,26 +2,42 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import {
+  BookOpen,
+  ChevronDown,
+  Filter,
+  Lock,
+  Pencil,
+  Search,
+  TrendingUp,
+  Trash2,
+} from "lucide-react";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { Fundamento } from "@/lib/fundamentos-types";
+import { cn } from "@/lib/utils";
 
 import { deleteFundamentoAction } from "./actions";
 import { FundamentoEditorDialog } from "./editor-dialog";
 
-const inputClass =
-  "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+interface Props {
+  initialQuery: string;
+  initialTema: string;
+  items: Fundamento[];
+  canEdit: boolean;
+}
 
 export function FundamentosBrowser({
   initialQuery,
   initialTema,
   items,
   canEdit,
-}: {
-  initialQuery: string;
-  initialTema: string;
-  items: Fundamento[];
-  canEdit: boolean;
-}) {
+}: Props) {
   const router = useRouter();
   const [q, setQ] = useState(initialQuery);
   const [tema, setTema] = useState(initialTema);
@@ -55,102 +71,158 @@ export function FundamentosBrowser({
   };
 
   return (
-    <div className="space-y-4">
-      <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-2">
-        <div className="flex-1 space-y-1 min-w-[180px]">
-          <label className="text-xs text-muted-foreground">Buscar (título, resumo, tema)</label>
-          <input className={inputClass} value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
-        <div className="flex-1 space-y-1 min-w-[180px]">
-          <label className="text-xs text-muted-foreground">Filtrar por tema</label>
-          <input
-            className={inputClass}
-            value={tema}
-            onChange={(e) => setTema(e.target.value)}
-            placeholder="Ex.: DANO MORAL"
-          />
-        </div>
-        <button
-          type="submit"
-          className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          Filtrar
-        </button>
-      </form>
-
+    <div className="space-y-6">
       {!canEdit && (
-        <p className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          Modo somente leitura: para editar ou remover fundamentações,
-          peça ao administrador o papel de gerente.
-        </p>
+        <Alert variant="info">
+          <Lock className="h-4 w-4" />
+          <AlertDescription>
+            Modo somente leitura. Para editar ou remover fundamentações, peça
+            ao administrador o papel de gerente.
+          </AlertDescription>
+        </Alert>
       )}
 
+      <Card>
+        <CardContent className="pt-6">
+          <form
+            onSubmit={onSubmit}
+            className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="q">Buscar</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="q"
+                  className="pl-9"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="título, resumo, tema"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tema">Tema</Label>
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="tema"
+                  className="pl-9"
+                  value={tema}
+                  onChange={(e) => setTema(e.target.value)}
+                  placeholder="Ex.: DANO MORAL"
+                />
+              </div>
+            </div>
+            <Button type="submit">Filtrar</Button>
+          </form>
+        </CardContent>
+      </Card>
+
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Nenhuma fundamentação registrada. Gerentes podem usar &quot;Aprender
-          fundamentação&quot; ao final de uma minuta para começar a base.
-        </p>
+        <Card className="border-dashed">
+          <div className="flex flex-col items-center gap-3 py-16 text-center">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-serif text-lg font-semibold">
+                Nenhuma fundamentação registrada
+              </h3>
+              <p className="max-w-sm text-sm text-muted-foreground">
+                Gerentes podem usar o botão{" "}
+                <span className="font-medium">Aprender fundamentação</span> ao
+                final de uma minuta para começar a base.
+              </p>
+            </div>
+          </div>
+        </Card>
       ) : (
         <ul className="space-y-3">
           {items.map((f) => (
-            <li key={f.id} className="space-y-2 rounded-md border bg-background p-4">
-              <header className="flex flex-wrap items-start justify-between gap-2">
-                <div className="space-y-1">
-                  <h3 className="text-sm font-semibold">{f.titulo}</h3>
-                  <p className="text-xs font-mono uppercase text-muted-foreground">
-                    {f.tema}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>usos: {f.usage_count}</span>
-                  {canEdit && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setEditing(f)}
-                        className="rounded border px-2 py-0.5 text-xs hover:bg-accent"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDelete(f.id)}
-                        disabled={removing === f.id}
-                        className="rounded border px-2 py-0.5 text-xs hover:bg-accent disabled:opacity-50"
-                      >
-                        {removing === f.id ? "Removendo…" : "Remover"}
-                      </button>
-                    </>
+            <li key={f.id}>
+              <Card>
+                <CardContent className="space-y-3 pt-6">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <Badge variant="muted" className="font-mono">
+                        {f.tema}
+                      </Badge>
+                      <h3 className="font-serif text-lg font-semibold leading-snug">
+                        {f.titulo}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <TrendingUp className="h-3 w-3" />
+                        <span>{f.usage_count} usos</span>
+                      </div>
+                      {canEdit && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditing(f)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Editar
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onDelete(f.id)}
+                            disabled={removing === f.id}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {f.resumo && (
+                    <p className="text-sm leading-relaxed text-foreground/85">
+                      {f.resumo}
+                    </p>
                   )}
-                </div>
-              </header>
-              {f.resumo && <p className="text-sm">{f.resumo}</p>}
-              {f.tags && f.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {f.tags.map((t, i) => (
-                    <span
-                      key={i}
-                      className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground"
-                    >
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() =>
-                  setExpanded((e) => ({ ...e, [f.id]: !e[f.id] }))
-                }
-                className="text-xs text-primary underline"
-              >
-                {expanded[f.id] ? "ocultar corpo" : "ver corpo da fundamentação"}
-              </button>
-              {expanded[f.id] && (
-                <pre className="overflow-auto rounded border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
-                  {f.corpo_md}
-                </pre>
-              )}
+
+                  {f.tags && f.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {f.tags.map((t, i) => (
+                        <Badge key={i} variant="secondary">
+                          {t}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      setExpanded((e) => ({ ...e, [f.id]: !e[f.id] }))
+                    }
+                    className="-ml-3 text-muted-foreground"
+                  >
+                    <ChevronDown
+                      className={cn(
+                        "h-3.5 w-3.5 transition-transform",
+                        expanded[f.id] && "rotate-180",
+                      )}
+                    />
+                    {expanded[f.id] ? "Ocultar corpo" : "Ver corpo da fundamentação"}
+                  </Button>
+                  {expanded[f.id] && (
+                    <pre className="overflow-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-3 text-xs leading-relaxed">
+                      {f.corpo_md}
+                    </pre>
+                  )}
+                </CardContent>
+              </Card>
             </li>
           ))}
         </ul>

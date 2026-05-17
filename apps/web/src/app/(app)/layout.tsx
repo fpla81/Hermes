@@ -1,17 +1,20 @@
-import Link from "next/link";
 import type { Route } from "next";
 import { redirect } from "next/navigation";
-import { auth, signOut } from "@/lib/auth";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { FileText, BookOpen, ScrollText, Settings, Users } from "lucide-react";
-import { isAdmin } from "@/lib/roles";
+import {
+  FileText,
+  BookOpen,
+  ScrollText,
+  Settings,
+  Users,
+  Shield,
+} from "lucide-react";
 
-const baseNav: { href: Route; label: string; icon: typeof FileText }[] = [
-  { href: "/cases", label: "Casos", icon: FileText },
-  { href: "/fundamentos", label: "Fundamentos", icon: BookOpen },
-  { href: "/templates", label: "Templates", icon: ScrollText },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+import { Brand } from "@/components/layout/brand";
+import { SidebarNav, type NavSection } from "@/components/layout/sidebar-nav";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { UserCard } from "@/components/layout/user-card";
+import { auth } from "@/lib/auth";
+import { isAdmin, type UserRole } from "@/lib/roles";
 
 export default async function AppLayout({
   children,
@@ -22,61 +25,51 @@ export default async function AppLayout({
   if (!session?.user) {
     redirect("/sign-in");
   }
-  const nav = isAdmin(session.user.role)
-    ? [
-        ...baseNav,
-        { href: "/admin/users" as Route, label: "Usuários", icon: Users },
-      ]
-    : baseNav;
+  const role = (session.user.role ?? "user") as UserRole;
+  const sections: NavSection[] = [
+    {
+      title: "Trabalho",
+      items: [
+        { href: "/cases" as Route, label: "Casos", icon: FileText },
+        { href: "/fundamentos" as Route, label: "Fundamentos", icon: BookOpen },
+        { href: "/templates" as Route, label: "Templates", icon: ScrollText },
+      ],
+    },
+    {
+      title: "Conta",
+      items: [{ href: "/settings" as Route, label: "Ajustes", icon: Settings }],
+    },
+  ];
+  if (isAdmin(role)) {
+    sections.push({
+      title: "Administração",
+      items: [{ href: "/admin/users" as Route, label: "Usuários", icon: Users }],
+    });
+  }
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="w-60 border-r bg-card flex flex-col">
-        <div className="h-14 flex items-center px-4 border-b">
-          <Link href="/cases" className="font-semibold tracking-tight">
-            Hermes
-          </Link>
+    <div className="flex min-h-screen bg-background">
+      <aside className="flex w-64 shrink-0 flex-col border-r bg-card/40 backdrop-blur-sm">
+        <div className="flex h-16 items-center border-b px-5">
+          <Brand size="md" />
         </div>
-        <nav className="flex-1 p-2 space-y-1">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="p-3 border-t text-xs text-muted-foreground space-y-2">
-          {session?.user?.email ? (
-            <>
-              <div className="truncate">{session.user.email}</div>
-              <form
-                action={async () => {
-                  "use server";
-                  await signOut({ redirectTo: "/sign-in" });
-                }}
-              >
-                <button className="hover:underline" type="submit">
-                  Sair
-                </button>
-              </form>
-            </>
-          ) : (
-            <Link href="/sign-in" className="hover:underline">
-              Entrar
-            </Link>
-          )}
-        </div>
+        <SidebarNav sections={sections} />
+        <UserCard email={session.user.email ?? ""} role={role} />
       </aside>
 
-      <div className="flex-1 flex flex-col">
-        <header className="h-14 border-b flex items-center justify-end gap-3 px-4">
-          <ThemeToggle />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-end gap-3 border-b bg-background/80 px-6 backdrop-blur-sm">
+          <Shield className="h-3.5 w-3.5 text-muted-foreground/60" />
+          <span className="text-xs text-muted-foreground">
+            Ambiente interno · acesso restrito
+          </span>
+          <div className="ml-2">
+            <ThemeToggle />
+          </div>
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1">
+          <div className="mx-auto max-w-6xl px-8 py-10">{children}</div>
+        </main>
       </div>
     </div>
   );

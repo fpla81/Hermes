@@ -1,5 +1,10 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AlertCircle, ChevronLeft } from "lucide-react";
 
+import { CaseStatusBadge } from "@/components/case-status-badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { getCase, listStructuredPieces } from "@/lib/cases";
 import type { DespachoBlueprint, StructuredPiece } from "@/lib/cases";
@@ -11,19 +16,6 @@ import { CaseWizard } from "./wizard";
 interface Params {
   id: string;
 }
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: "Rascunho",
-  capturing: "Capturando",
-  captured: "Capturado",
-  preparing: "Preparando",
-  analyzing: "Analisando",
-  ready: "Pronto",
-  packaging: "Empacotando",
-  rendering: "Renderizando",
-  done: "Concluído",
-  error: "Erro",
-};
 
 const IN_FLIGHT_STATES = new Set([
   "capturing",
@@ -57,23 +49,48 @@ export default async function CaseDetailPage({
   const canLearn = isManager(session?.user?.role);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {isInFlight && <CasePolling />}
 
-      <header className="space-y-1">
-        <h1 className="font-mono text-xl">{c.numero_processo}</h1>
-        {c.titulo && <p className="text-muted-foreground">{c.titulo}</p>}
-        <p className="text-xs text-muted-foreground">
-          Status: <span className="font-medium">{STATUS_LABEL[c.status] ?? c.status}</span>
-          {" · "}
-          Criado em {new Date(c.created_at).toLocaleString("pt-BR")}
-        </p>
-      </header>
+      <div className="space-y-4">
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="-ml-3 text-muted-foreground"
+        >
+          <Link href="/cases">
+            <ChevronLeft className="h-4 w-4" />
+            Voltar para Casos
+          </Link>
+        </Button>
+        <header className="flex flex-wrap items-start justify-between gap-4 border-b pb-6">
+          <div className="space-y-2">
+            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+              Processo {c.numero_processo}
+            </p>
+            <h1 className="font-serif text-3xl font-semibold tracking-tight">
+              {c.titulo || "Sem título"}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Criado em{" "}
+              {new Date(c.created_at).toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
+          </div>
+          <CaseStatusBadge status={c.status} />
+        </header>
+      </div>
 
       {c.last_error && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
-          <strong className="font-medium">Último erro:</strong> {c.last_error}
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Erro na última operação</AlertTitle>
+          <AlertDescription>{c.last_error}</AlertDescription>
+        </Alert>
       )}
 
       <CaseWizard

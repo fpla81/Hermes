@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/layout/page-header";
 import { auth } from "@/lib/auth";
 import { listFundamentos } from "@/lib/fundamentos";
 import { isManager } from "@/lib/roles";
@@ -20,14 +21,12 @@ export default async function FundamentosPage({
   const canEdit = isManager(session?.user?.role);
 
   return (
-    <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Fundamentos</h1>
-        <p className="text-sm text-muted-foreground">
-          Fundamentações jurídicas aprendidas a partir das minutas finais.
-          Reusadas automaticamente como modelo na geração de novas minutas.
-        </p>
-      </header>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Base do gabinete"
+        title="Fundamentos"
+        description="Fundamentações jurídicas aprendidas a partir das minutas finais. Reaproveitadas automaticamente como modelo na geração de novas minutas."
+      />
 
       <FundamentosBrowser
         initialQuery={sp.q ?? ""}

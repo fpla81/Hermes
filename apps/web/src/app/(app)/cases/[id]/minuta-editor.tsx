@@ -1,6 +1,18 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import {
+  Code2,
+  Download,
+  Eye,
+  FileDown,
+  GraduationCap,
+  Sparkles,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 
 import {
   generateMinutaDraftAction,
@@ -46,7 +58,6 @@ export function MinutaEditor({
   );
   const [showRaw, setShowRaw] = useState(false);
 
-  // Quando o rascunho chega, oferece substituir
   if (draftState.text && draftState.text !== text && !text.trim()) {
     setText(draftState.text);
   }
@@ -58,128 +69,135 @@ export function MinutaEditor({
     : null;
 
   return (
-    <section className="space-y-3 rounded-md border p-4">
-      <header className="space-y-1">
-        <h2 className="text-sm font-medium">Minuta</h2>
-        <p className="text-xs text-muted-foreground">
-          Editor à esquerda, prévia formatada à direita. Salve antes de gerar o
-          DOCX ou aprender a fundamentação.
-        </p>
-      </header>
-
+    <div className="space-y-5">
+      {/* Toolbar superior — gerar, exportar, aprender */}
       <div className="flex flex-wrap items-center gap-2">
         <form action={draftFormAction}>
           <input type="hidden" name="id" value={caseId} />
-          <button
-            type="submit"
-            disabled={draftPending}
-            className="inline-flex h-9 items-center rounded-md border bg-background px-3 text-sm font-medium hover:bg-accent disabled:opacity-50"
-          >
+          <Button type="submit" disabled={draftPending} variant="outline">
+            <Sparkles className="h-4 w-4" />
             {draftPending ? "Gerando…" : "Gerar rascunho"}
-          </button>
+          </Button>
         </form>
+        {draftState.text && !draftState.error && (
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            onClick={() => setText(draftState.text!)}
+          >
+            Usar rascunho gerado
+          </Button>
+        )}
         {draftState.error && (
           <span className="text-xs text-destructive">{draftState.error}</span>
         )}
-        {draftState.text && !draftState.error && (
-          <button
-            type="button"
-            onClick={() => setText(draftState.text!)}
-            className="text-xs text-primary underline"
-          >
-            usar rascunho gerado
-          </button>
-        )}
+
+        <Separator orientation="vertical" className="h-6" />
 
         <form action={triggerDocxAction}>
           <input type="hidden" name="id" value={caseId} />
-          <button
-            type="submit"
-            disabled={!hasMinuta}
-            className="inline-flex h-9 items-center rounded-md border bg-background px-3 text-sm font-medium hover:bg-accent disabled:opacity-50"
-          >
+          <Button type="submit" disabled={!hasMinuta} variant="outline">
+            <FileDown className="h-4 w-4" />
             {hasDocx ? "Regerar DOCX" : "Gerar DOCX"}
-          </button>
+          </Button>
         </form>
 
         {hasDocx && (
-          <a
-            href={`/cases/${caseId}/docx`}
-            className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Baixar DOCX
-          </a>
+          <Button asChild>
+            <a href={`/cases/${caseId}/docx`}>
+              <Download className="h-4 w-4" />
+              Baixar DOCX
+            </a>
+          </Button>
         )}
 
         {canLearn && (
           <form action={learnFormAction} className="ml-auto">
             <input type="hidden" name="case_id" value={caseId} />
-            <button
+            <Button
               type="submit"
               disabled={!hasMinuta || learning}
+              variant="success"
               title={
                 hasMinuta
                   ? "Extrai as fundamentações da minuta e salva na base do gabinete"
                   : "Salve a minuta primeiro"
               }
-              className="inline-flex h-9 items-center rounded-md border border-emerald-300 bg-emerald-50 px-3 text-sm font-medium text-emerald-900 hover:bg-emerald-100 disabled:opacity-50"
             >
+              <GraduationCap className="h-4 w-4" />
               {learning ? "Aprendendo…" : "Aprender fundamentação"}
-            </button>
+            </Button>
           </form>
         )}
       </div>
 
       {learnMsg && (
-        <p className="text-xs text-emerald-700">{learnMsg}</p>
+        <p className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs text-success">
+          {learnMsg}
+        </p>
       )}
       {learnState.error && (
-        <p className="text-xs text-destructive">{learnState.error}</p>
+        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {learnState.error}
+        </p>
       )}
 
-      <form action={saveFormAction} className="space-y-3">
+      <form action={saveFormAction} className="space-y-4">
         <input type="hidden" name="id" value={caseId} />
         <input type="hidden" name="text" value={text} />
 
         <div className="flex items-center justify-end">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => setShowRaw((v) => !v)}
-            className="text-xs text-muted-foreground underline hover:text-foreground"
+            className="text-muted-foreground"
           >
-            {showRaw ? "voltar ao editor visual" : "ver código markdown"}
-          </button>
+            {showRaw ? (
+              <>
+                <Eye className="h-3.5 w-3.5" />
+                Voltar ao editor visual
+              </>
+            ) : (
+              <>
+                <Code2 className="h-3.5 w-3.5" />
+                Ver código markdown
+              </>
+            )}
+          </Button>
         </div>
 
         {showRaw ? (
-          <textarea
+          <Textarea
             rows={28}
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="[[CORPO]]&#10;PROCESSO Nº ..."
             spellCheck={false}
-            className="w-full rounded-md border bg-background p-3 font-mono text-xs leading-relaxed"
+            className="font-mono text-xs leading-relaxed"
           />
         ) : (
           <MinutaTiptap value={text} onChange={setText} />
         )}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
+        <div className="flex items-center gap-3">
+          <Button
             type="submit"
             disabled={savePending || !text.trim()}
-            className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            size="lg"
           >
             {savePending ? "Salvando…" : "Salvar minuta"}
-          </button>
+          </Button>
           {saveState.ok && (
-            <span className="text-xs text-emerald-600">Salvo.</span>
+            <span className="text-xs text-success">Salvo com sucesso.</span>
           )}
           {saveState.error && (
             <span className="text-xs text-destructive">{saveState.error}</span>
           )}
         </div>
       </form>
-    </section>
+    </div>
   );
 }
