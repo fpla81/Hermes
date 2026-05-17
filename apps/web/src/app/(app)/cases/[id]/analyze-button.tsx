@@ -16,7 +16,10 @@ interface Props {
 }
 
 export function AnalyzeButton({ caseId, alreadyAnalyzed, inFlight, lastError }: Props) {
-  const [state, formAction, pending] = useActionState(analyzeCaseAction, INITIAL);
+  const [rawState, formAction, pending] = useActionState(analyzeCaseAction, INITIAL);
+  // Em Next 15.1 + React 19, useActionState pode devolver state undefined
+  // após revalidatePath/redirect — protege com fallback.
+  const state = rawState ?? INITIAL;
   const examining = pending || inFlight;
   return (
     <div className="flex flex-col items-end gap-2">
@@ -36,10 +39,10 @@ export function AnalyzeButton({ caseId, alreadyAnalyzed, inFlight, lastError }: 
           )}
         </button>
       </form>
-      {state.error && (
+      {state?.error && (
         <p className="text-xs text-destructive">Erro: {state.error}</p>
       )}
-      {!state.error && lastError && !examining && (
+      {!state?.error && lastError && !examining && (
         <p className="text-xs text-destructive">Último erro: {lastError}</p>
       )}
     </div>
