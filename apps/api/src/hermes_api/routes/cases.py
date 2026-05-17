@@ -413,6 +413,8 @@ async def generate_minuta_draft(
                         "resumo": f.resumo,
                         "corpo_md": f.corpo_md,
                         "tags": f.tags or [],
+                        "conclusao_provimento": f.conclusao_provimento,
+                        "conclusao_nao_conhecimento": f.conclusao_nao_conhecimento,
                     }
                     for f in matches
                 ]
@@ -455,6 +457,8 @@ async def learn_fundamentos(
             corpo_md=item.corpo_md,
             tags=item.tags,
             resumo=item.resumo,
+            conclusao_provimento=item.conclusao_provimento,
+            conclusao_nao_conhecimento=item.conclusao_nao_conhecimento,
             source_case_id=item.source_case_id,
         )
         db.add(f)

@@ -70,6 +70,10 @@ async def update_fundamento(
         f.tags = data["tags"]
     if "resumo" in data:
         f.resumo = data["resumo"]
+    if "conclusao_provimento" in data:
+        f.conclusao_provimento = data["conclusao_provimento"]
+    if "conclusao_nao_conhecimento" in data:
+        f.conclusao_nao_conhecimento = data["conclusao_nao_conhecimento"]
     await db.commit()
     await db.refresh(f)
     return f

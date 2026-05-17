@@ -22,6 +22,10 @@ export async function updateFundamentoAction(
       titulo: String(form.get("titulo") ?? "").trim() || undefined,
       resumo: String(form.get("resumo") ?? "").trim() || undefined,
       corpo_md: String(form.get("corpo_md") ?? ""),
+      conclusao_provimento:
+        String(form.get("conclusao_provimento") ?? "").trim() || undefined,
+      conclusao_nao_conhecimento:
+        String(form.get("conclusao_nao_conhecimento") ?? "").trim() || undefined,
       tags: tagsRaw
         ? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean)
         : [],

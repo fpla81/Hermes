@@ -313,3 +313,61 @@ def test_learn_endpoint_forbidden_for_plain_user(client) -> None:
     res = client.post(f"/cases/{fake}/learn-fundamentos", headers=USER_HEADERS)
     # 403 antes mesmo de o 404 ser checado, porque require_manager roda primeiro
     assert res.status_code == 403
+
+
+def test_extract_parses_conclusoes(monkeypatch) -> None:
+    """Extrator deve preencher conclusao_provimento e conclusao_nao_conhecimento."""
+    monkeypatch.setenv("GEMINI_API_KEY", "fake-key")
+    from hermes_api.config import get_settings
+
+    get_settings.cache_clear()
+
+    fake = """{
+      "fundamentos": [
+        {
+          "tema": "HORAS EXTRAS - DIVISOR",
+          "titulo": "Divisor 180 para jornada 6h",
+          "corpo_md": "[[CORPO]]\\nA jornada contratual de 6 horas atrai...",
+          "tags": ["horas extras", "divisor", "súmula 124 TST"],
+          "resumo": "Jornada 6h → divisor 180.",
+          "conclusao_provimento": "Conheço do Recurso de Revista por contrariedade à Súmula 124 do TST e, no mérito, dou-lhe provimento.",
+          "conclusao_nao_conhecimento": "Não conheço do Recurso de Revista, pois o acórdão regional está em harmonia com a Súmula 124 do TST."
+        }
+      ]
+    }"""
+
+    class FakeProvider:
+        def analyze(self, text: str) -> str:
+            return fake
+
+    import uuid as _uuid
+
+    from hermes_api.models.case import Case
+    from hermes_api.services.fundamentos import extract_from_minuta
+
+    case = Case(
+        id=_uuid.uuid4(),
+        user_id="u1",
+        numero_processo="0001234-56.2023.5.06.0020",
+        minuta_md="x",
+        analysis_dossie={"recursos": [{"temas": [{"nome": "HORAS EXTRAS - DIVISOR"}]}]},
+    )
+    with patch(
+        "hermes_api.services.fundamentos.get_llm_provider",
+        return_value=FakeProvider(),
+    ):
+        out = extract_from_minuta(case)
+    assert len(out) == 1
+    f = out[0]
+    assert f.conclusao_provimento and "dou-lhe provimento" in f.conclusao_provimento
+    assert f.conclusao_nao_conhecimento and "Não conheço" in f.conclusao_nao_conhecimento
+
+
+def test_extract_prompt_demands_no_summary() -> None:
+    """Prompt de extração deve ter a regra de NÃO RESUMAR explícita."""
+    from hermes_api.services.fundamentos import _EXTRACT_PROMPT
+
+    assert "NÃO RESUMA" in _EXTRACT_PROMPT
+    assert "COPIE LITERAL" in _EXTRACT_PROMPT or "Copie literal" in _EXTRACT_PROMPT or "copie literal" in _EXTRACT_PROMPT.lower()
+    assert "conclusao_provimento" in _EXTRACT_PROMPT
+    assert "conclusao_nao_conhecimento" in _EXTRACT_PROMPT

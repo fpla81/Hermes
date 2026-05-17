@@ -5,6 +5,8 @@ export interface Fundamento {
   corpo_md: string;
   tags: string[] | null;
   resumo: string | null;
+  conclusao_provimento: string | null;
+  conclusao_nao_conhecimento: string | null;
   source_case_id: string | null;
   usage_count: number;
   created_at: string;
@@ -26,4 +28,6 @@ export interface FundamentoUpdate {
   corpo_md?: string;
   tags?: string[];
   resumo?: string;
+  conclusao_provimento?: string;
+  conclusao_nao_conhecimento?: string;
 }

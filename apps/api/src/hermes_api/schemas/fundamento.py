@@ -10,6 +10,8 @@ class FundamentoCreate(BaseModel):
     corpo_md: str = Field(..., min_length=1)
     tags: list[str] = Field(default_factory=list)
     resumo: str | None = None
+    conclusao_provimento: str | None = None
+    conclusao_nao_conhecimento: str | None = None
     source_case_id: uuid.UUID | None = None
 
 
@@ -22,6 +24,8 @@ class FundamentoRead(BaseModel):
     corpo_md: str
     tags: list[str] | None = None
     resumo: str | None = None
+    conclusao_provimento: str | None = None
+    conclusao_nao_conhecimento: str | None = None
     source_case_id: uuid.UUID | None = None
     usage_count: int
     created_at: datetime
@@ -38,3 +42,5 @@ class FundamentoUpdate(BaseModel):
     corpo_md: str | None = None
     tags: list[str] | None = None
     resumo: str | None = None
+    conclusao_provimento: str | None = None
+    conclusao_nao_conhecimento: str | None = None

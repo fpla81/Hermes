@@ -30,26 +30,58 @@ from ..models.case import Case
 from ..models.fundamento import Fundamento
 from ..schemas.fundamento import FundamentoCreate
 
-_EXTRACT_PROMPT = """Você é um assistente jurídico do TST. Receba a MINUTA final
+_EXTRACT_PROMPT = """Você é um assistente jurídico do TST. Recebe a MINUTA final
 (em markdown com marcadores ``[[CORPO]]`` / ``[[TRANSCRICAO*]]`` / ``[[EMENTA]]``)
-e o DOSSIÊ estruturado da análise, e extraia, para CADA tema, a
-fundamentação jurídica do gabinete pronta para reuso em casos análogos.
+e o DOSSIÊ estruturado da análise. Extrai, por tema, a fundamentação
+jurídica do gabinete pronta para reuso em casos análogos.
 
-Para cada tema do dossiê que apareça na minuta, devolva um objeto JSON com:
-- ``tema``: nome canônico do tema, idêntico ao do dossiê (CAIXA ALTA).
-- ``titulo``: título curto (≤ 80 chars) descrevendo a tese.
-- ``corpo_md``: TRANSCRIÇÃO LITERAL do bloco de análise jurídica do tema
-  na minuta (a parte que contém raciocínio + dispositivo do tema).
-  Inclua os marcadores ``[[CORPO]]`` quando estiverem ali.
-- ``tags``: array de 3 a 8 strings curtas — palavras-chave jurídicas (ex.:
-  "horas extras", "divisor", "art 71 CLT", "súmula 437 TST").
-- ``resumo``: 1 a 2 frases sintetizando a tese do gabinete sobre o tema,
-  no presente do indicativo. Vai pro índice de busca. NÃO copie o corpo.
+REGRA CRÍTICA — NÃO RESUMA. Você copia, não interpreta:
+
+1. Para cada tema, localize na minuta o bloco completo dele (do cabeçalho
+   "TEMA - ..." até pouco antes do próximo "TEMA - ..." ou do
+   "DISPOSITIVO").
+2. Dentro desse bloco, identifique onde TERMINA o RELATÓRIO DO RECURSO
+   (relatório típico: parágrafo "O Eg. TRT decidiu/deu provimento...",
+   bloco [[TRANSCRICAO1]] com trecho do acórdão regional, parágrafo das
+   razões da parte recorrente, eventualmente bloco de embargos).
+3. ``corpo_md`` = COPIE LITERAL, sem resumir, TUDO que vem após o
+   relatório, EXCETO a frase final de conclusão decisória ("Conheço do
+   Recurso de Revista e dou-lhe provimento, ...", "Não conheço do
+   Recurso de Revista", "Nego provimento ao Agravo de Instrumento", etc).
+   Inclua marcadores ``[[CORPO]]``, ``[[TRANSCRICAO*]]``, ``[[EMENTA]]``
+   exatamente como aparecem. NUNCA parafrasear; NUNCA omitir parágrafos.
+   Se a fundamentação tem 12 parágrafos, copie os 12.
+4. Separe a CONCLUSÃO em DUAS hipóteses pré-prontas:
+   - ``conclusao_provimento``: a versão "conheço e dou provimento" da
+     conclusão decisória, aplicável quando, em caso futuro, o acórdão
+     regional CONTRARIAR o entendimento da fundamentação acima. Use o
+     dispositivo concreto compatível ("Conheço do Recurso de Revista,
+     por contrariedade à Súmula nº ... do TST, e, no mérito, dou-lhe
+     provimento para ..."). Pode ser inferida a partir da conclusão
+     original da minuta, adaptando se necessário.
+   - ``conclusao_nao_conhecimento``: a versão "não conheço" da conclusão,
+     aplicável quando o acórdão regional do caso futuro ESTIVER EM
+     CONFORMIDADE com o entendimento da fundamentação acima ("Não conheço
+     do Recurso de Revista, porque o acórdão regional está em harmonia
+     com a iterativa jurisprudência desta Corte / Súmula nº ... do
+     TST.").
+   Ambas devem ser frases curtas, no presente do indicativo, prontas pra
+   colar; podem mencionar [[CORPO]] ao início.
+5. ``titulo`` (≤ 80 chars), ``tags`` (3-8 strings) e ``resumo`` (1 frase
+   de índice — esse SIM é sintético; NÃO copia o corpo).
 
 Responda APENAS com JSON puro, sem ``` e sem texto adicional:
 {
   "fundamentos": [
-    {"tema": "...", "titulo": "...", "corpo_md": "...", "tags": ["..."], "resumo": "..."}
+    {
+      "tema": "...",
+      "titulo": "...",
+      "corpo_md": "...",
+      "tags": ["..."],
+      "resumo": "...",
+      "conclusao_provimento": "...",
+      "conclusao_nao_conhecimento": "..."
+    }
   ]
 }
 
@@ -115,6 +147,10 @@ def extract_from_minuta(case: Case) -> list[FundamentoCreate]:
             tags = [str(t).strip() for t in tags_raw if str(t).strip()] if isinstance(tags_raw, list) else []
             resumo = item.get("resumo")
             resumo = str(resumo).strip() if resumo else None
+            cp = item.get("conclusao_provimento")
+            cp = str(cp).strip() if cp else None
+            cn = item.get("conclusao_nao_conhecimento")
+            cn = str(cn).strip() if cn else None
             out.append(
                 FundamentoCreate(
                     tema=tema,
@@ -122,6 +158,8 @@ def extract_from_minuta(case: Case) -> list[FundamentoCreate]:
                     corpo_md=corpo,
                     tags=tags,
                     resumo=resumo,
+                    conclusao_provimento=cp,
+                    conclusao_nao_conhecimento=cn,
                     source_case_id=case.id,
                 )
             )

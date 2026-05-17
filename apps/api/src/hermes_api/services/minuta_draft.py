@@ -476,9 +476,34 @@ modelo cadastrado.
 # FUNDAMENTAÇÕES SUGERIDAS POR TEMA
 
 A base do gabinete contém fundamentações já redigidas em casos análogos.
-Quando relevantes ao tema corrente, **use-as como ponto de partida** —
-adapte ao caso concreto, ajustando partes, datas, valores e nuances
-factuais. NUNCA copie cegamente; sempre confira aderência factual.
+Para cada tema COM modelo, você recebe TRÊS blocos:
+
+1. **Fundamentação (corpo)**: o raciocínio jurídico literal, SEM a
+   conclusão decisória. Use-o como base da fundamentação no caso atual,
+   adaptando partes, datas, valores e nuances factuais.
+
+2. **Conclusão se contrariar**: dispositivo pré-pronto pra hipótese em
+   que o acórdão regional do caso ATUAL CONTRARIE o entendimento
+   veiculado na fundamentação acima.
+
+3. **Conclusão se estiver conforme**: dispositivo pré-pronto pra
+   hipótese em que o acórdão regional do caso ATUAL ESTEJA EM
+   CONFORMIDADE com o entendimento veiculado na fundamentação.
+
+**DECISÃO QUE VOCÊ DEVE TOMAR POR TEMA:** confronte o acórdão regional
+extraído do dossiê (campo `acordao_recorrido_resumo` /
+`acordao_recorrido_transcricao` + recurso da parte) com o entendimento
+veiculado na fundamentação do modelo. Identifique se:
+  - O TRT decidiu de modo CONTRÁRIO ao entendimento do modelo → use a
+    "Conclusão se contrariar".
+  - O TRT decidiu de modo CONFORME o entendimento do modelo → use a
+    "Conclusão se estiver conforme".
+Em caso de dúvida razoável, prefira "estiver conforme" (não-conhecimento)
+e emita `[[ALERTA_VERMELHO]]` sinalizando que a aderência exige
+conferência humana.
+
+NUNCA invente conclusão diferente das duas hipóteses fornecidas — adapte
+apenas dados concretos (parte, número de processo, valores etc.).
 
 {fundamentos_block}
 
@@ -585,17 +610,32 @@ def _format_fundamentos_block(
     parts: list[str] = []
 
     if has_models:
-        parts.append("## Temas COM modelo (redigir análise jurídica adaptando o modelo):")
+        parts.append("## Temas COM modelo (redigir fundamentação adaptando o modelo):")
         for tema, items in has_models.items():
             parts.append(f"### Tema: {tema}")
             for i, it in enumerate(items, start=1):
                 titulo = it.get("titulo") or "(sem título)"
                 resumo = it.get("resumo") or ""
                 corpo = it.get("corpo_md") or ""
+                cp = it.get("conclusao_provimento") or ""
+                cn = it.get("conclusao_nao_conhecimento") or ""
                 parts.append(f"#### Modelo {i} — {titulo}")
                 if resumo:
                     parts.append(f"_{resumo}_")
+                parts.append("**FUNDAMENTAÇÃO (corpo, copiar e adaptar — não inclui conclusão):**")
                 parts.append(corpo)
+                if cp:
+                    parts.append(
+                        "**Conclusão se acórdão regional CONTRARIAR o entendimento (usar para "
+                        "conhecer e dar provimento):**"
+                    )
+                    parts.append(cp)
+                if cn:
+                    parts.append(
+                        "**Conclusão se acórdão regional ESTIVER CONFORME o entendimento (usar "
+                        "para não conhecer):**"
+                    )
+                    parts.append(cn)
                 parts.append("")
     else:
         parts.append("(nenhum modelo aderente na base do gabinete para os temas deste caso.)")

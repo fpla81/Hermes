@@ -34,6 +34,12 @@ export function FundamentoEditorDialog({ open, onClose, fundamento }: Props) {
   const [resumo, setResumo] = useState(fundamento.resumo ?? "");
   const [tags, setTags] = useState((fundamento.tags ?? []).join(", "));
   const [corpo, setCorpo] = useState(fundamento.corpo_md);
+  const [concProv, setConcProv] = useState(
+    fundamento.conclusao_provimento ?? "",
+  );
+  const [concNaoCon, setConcNaoCon] = useState(
+    fundamento.conclusao_nao_conhecimento ?? "",
+  );
   const [state, formAction, pending] = useActionState(
     updateFundamentoAction,
     INITIAL,
@@ -107,8 +113,37 @@ export function FundamentoEditorDialog({ open, onClose, fundamento }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Corpo da fundamentação</Label>
+            <Label>Corpo da fundamentação (literal, sem conclusão decisória)</Label>
             <MinutaTiptap value={corpo} onChange={setCorpo} />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="ed-conc-prov">
+                Conclusão · acórdão regional CONTRARIAR → conhecer e dar provimento
+              </Label>
+              <Textarea
+                id="ed-conc-prov"
+                name="conclusao_provimento"
+                rows={6}
+                value={concProv}
+                onChange={(e) => setConcProv(e.target.value)}
+                placeholder="Ex.: Conheço do Recurso de Revista por contrariedade à Súmula nº ... e, no mérito, dou-lhe provimento para ..."
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ed-conc-nao">
+                Conclusão · acórdão regional CONFORME → não conhecer
+              </Label>
+              <Textarea
+                id="ed-conc-nao"
+                name="conclusao_nao_conhecimento"
+                rows={6}
+                value={concNaoCon}
+                onChange={(e) => setConcNaoCon(e.target.value)}
+                placeholder="Ex.: Não conheço do Recurso de Revista, pois o acórdão regional está em harmonia com a Súmula nº ... do TST."
+              />
+            </div>
           </div>
 
           <DialogFooter className="items-center">

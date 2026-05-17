@@ -21,6 +21,8 @@ class Fundamento(Base):
     corpo_md: Mapped[str] = mapped_column(Text, nullable=False)
     tags: Mapped[list | None] = mapped_column(JSON, nullable=True)
     resumo: Mapped[str | None] = mapped_column(Text, nullable=True)
+    conclusao_provimento: Mapped[str | None] = mapped_column(Text, nullable=True)
+    conclusao_nao_conhecimento: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_case_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid,
         ForeignKey("cases.id", ondelete="SET NULL"),
