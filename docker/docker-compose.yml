@@ -154,11 +154,10 @@ services:
       - ../apps/api:/app/apps/api
     command: ["uv", "run", "celery", "-A", "hermes_worker.celery_app", "beat", "--loglevel=info"]
 
-  # Serviço playwright legado — não sobe por padrão. O fluxo atual usa o
-  # bookmarklet em /settings (sem captura controlada pelo servidor).
-  # Para reativar: `docker compose --profile legacy up playwright`.
+  # Serviço Playwright — renderiza páginas JS (ex.: tabela de Repetitivos
+  # do TST que vem em React). Captura de Bem-te-vi (endpoint /capture) é
+  # opcional; o fluxo principal hoje usa o bookmarklet em /settings.
   playwright:
-    profiles: ["legacy"]
     build:
       context: ..
       dockerfile: apps/playwright/Dockerfile

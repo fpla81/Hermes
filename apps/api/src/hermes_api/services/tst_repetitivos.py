@@ -160,22 +160,69 @@ def parse_repetitivos_html(html: str) -> list[TemaRepetitivoIn]:
 def fetch_repetitivos_table(timeout: float = 30.0) -> list[TemaRepetitivoIn]:
     """Baixa o HTML do TST e devolve a lista parseada.
 
-    Em caso de erro de rede ou bloqueio (WAF), loga e devolve lista vazia.
+    Estratégia em 2 tentativas:
+      1) httpx direto com headers de Chrome BR — barato e rápido. Funciona
+         quando a página é estática (o que NÃO é o caso atual do TST: a
+         tabela é renderizada por React/Liferay client-side).
+      2) Fallback via serviço Playwright (``PLAYWRIGHT_SERVICE_URL``), que
+         abre Chromium headless e devolve o DOM pós-JS.
+
+    Em qualquer falha, loga e devolve lista vazia.
     """
+    # tenta httpx primeiro
+    html = ""
     try:
         with httpx.Client(headers=_HEADERS, timeout=timeout, follow_redirects=True) as c:
             res = c.get(TST_URL)
-        if res.status_code != 200:
+        if res.status_code == 200:
+            html = res.text
+        else:
             log.warning(
-                "fetch_repetitivos_table: HTTP %s ao baixar %s",
+                "fetch_repetitivos_table httpx: HTTP %s ao baixar %s",
                 res.status_code,
                 TST_URL,
             )
-            return []
-        return parse_repetitivos_html(res.text)
     except Exception as exc:  # noqa: BLE001
-        log.exception("fetch_repetitivos_table falhou: %s", exc)
+        log.warning("fetch_repetitivos_table httpx falhou: %s", exc)
+
+    items = parse_repetitivos_html(html) if html else []
+    if items:
+        return items
+
+    # fallback Playwright se nenhum tema foi extraído
+    pw_html = _fetch_via_playwright()
+    if not pw_html:
         return []
+    return parse_repetitivos_html(pw_html)
+
+
+def _fetch_via_playwright() -> str:
+    """Chama o microserviço hermes-playwright pra renderizar o JS."""
+    from os import getenv
+
+    base = getenv("PLAYWRIGHT_SERVICE_URL", "http://playwright:8001").rstrip("/")
+    try:
+        with httpx.Client(timeout=120.0) as c:
+            r = c.post(
+                f"{base}/render",
+                json={"url": TST_URL, "wait_until": "networkidle", "timeout_ms": 60000},
+            )
+        if r.status_code != 200:
+            log.warning(
+                "fetch_repetitivos_table playwright: HTTP %s — body: %s",
+                r.status_code,
+                r.text[:300],
+            )
+            return ""
+        data = r.json()
+        return str(data.get("html") or "")
+    except Exception as exc:  # noqa: BLE001
+        log.warning(
+            "fetch_repetitivos_table playwright: erro ao chamar %s/render: %s",
+            base,
+            exc,
+        )
+        return ""
 
 
 def upsert_repetitivos(db: SyncSession, items: list[TemaRepetitivoIn]) -> dict[str, int]:

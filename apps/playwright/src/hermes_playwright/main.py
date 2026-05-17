@@ -68,6 +68,54 @@ async def capture(
     )
 
 
+class RenderRequest(BaseModel):
+    url: str = Field(..., min_length=10, max_length=1000)
+    wait_until: str = Field(default="networkidle", max_length=32)
+    timeout_ms: int = Field(default=45000, ge=1000, le=120000)
+
+
+class RenderResponse(BaseModel):
+    url: str
+    html: str
+    status: int
+
+
+@app.post("/render", response_model=RenderResponse)
+async def render_page(payload: RenderRequest) -> RenderResponse:
+    """Renderiza uma URL pública via Chromium headless e devolve o HTML
+    pós-JS. Usado pra páginas JS-rendered como o portal Liferay do TST.
+
+    Sem login, sem profile persistente — contexto efêmero.
+    """
+    from playwright.async_api import async_playwright
+
+    if not (payload.url.startswith("http://") or payload.url.startswith("https://")):
+        raise HTTPException(status_code=422, detail="URL deve começar com http(s)://")
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        try:
+            context = await browser.new_context(
+                locale="pt-BR",
+                user_agent=(
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/124.0.0.0 Safari/537.36"
+                ),
+            )
+            page = await context.new_page()
+            response = await page.goto(
+                payload.url,
+                wait_until=payload.wait_until,  # type: ignore[arg-type]
+                timeout=payload.timeout_ms,
+            )
+            status_code = response.status if response else 0
+            html = await page.content()
+        finally:
+            await browser.close()
+    return RenderResponse(url=payload.url, html=html, status=status_code)
+
+
 class LoginCompleteRequest(BaseModel):
     session_id: str
 
