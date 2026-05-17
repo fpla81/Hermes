@@ -53,3 +53,30 @@ def test_repetitive_theme_audit_inserts_note() -> None:
     doc = Document(io.BytesIO(blob))
     texts = [p.text for p in doc.paragraphs]
     assert any("Tema 99" in t for t in texts)
+
+
+def test_transcricao_styles_have_progressive_indents() -> None:
+    """Recuos esquerdos das Transcrições 1/2/3 devem progredir conforme docx.py."""
+    import io
+    from docx import Document
+    from hermes_api.services.docx import render_docx
+
+    blob = render_docx(
+        "[[CORPO]]\nTEMA - X\n[[TRANSCRICAO1]]\na\n"
+        "[[TRANSCRICAO2]]\nb\n[[TRANSCRICAO3]]\nc\n"
+        "[[CORPO]]\nDISPOSITIVO\n"
+    )
+    d = Document(io.BytesIO(blob))
+    styles = {s.name: s for s in d.styles}
+    for name in ("Transcrição 1", "Transcrição 2", "Transcrição 3"):
+        assert name in styles, f"estilo {name} ausente"
+
+    def cm(name: str) -> float:
+        return styles[name].paragraph_format.left_indent.cm
+
+    assert abs(cm("Transcrição 1") - 4.5) < 0.01
+    assert abs(cm("Transcrição 2") - 6.5) < 0.01
+    assert abs(cm("Transcrição 3") - 7.5) < 0.01
+    # first-line indent comum (1 cm)
+    for name in ("Transcrição 1", "Transcrição 2", "Transcrição 3"):
+        assert abs(styles[name].paragraph_format.first_line_indent.cm - 1) < 0.01
