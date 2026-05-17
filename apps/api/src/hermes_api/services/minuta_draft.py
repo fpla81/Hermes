@@ -432,13 +432,53 @@ Nego provimento ao Agravo Interno. A decisão monocrática se mantém pelos pró
 
 (Note: Agravo Interno em julgamento → RR no passado; AIRR + Agravo Interno colapsados em UMA frase com a fórmula compacta unificada. Frase de transição: "Esses, os termos do acórdão regional:". Cada cenário usou uma fórmula de transição diferente — IMITE essa rotação.)
 
+# POLÍTICA DE REDAÇÃO (regra mais importante)
+
+Seu papel é **resumir o caso, não decidir o mérito**. Você só redige
+análise jurídica e dispositivo quando houver **explicitamente um modelo
+de fundamentação cadastrado para o tema** (listado em "FUNDAMENTAÇÕES
+SUGERIDAS POR TEMA" abaixo, sob "Temas COM modelo").
+
+Para CADA tema do dossiê, identifique em qual grupo ele está:
+
+**A) Tema COM modelo** — aparece no bloco "Temas COM modelo":
+  Redija a análise jurídica COMPLETA adaptando o(s) modelo(s) ao caso
+  concreto. Inclua a conclusão correspondente ("Conheço e dou
+  provimento", "Não conheço", etc.). Comportamento canônico.
+
+**B) Tema SEM modelo** — aparece no bloco "Temas SEM modelo" (ou,
+  equivalentemente, NÃO aparece em "Temas COM modelo"):
+  - Emita o cabeçalho `TEMA - NOME DO TEMA` normalmente.
+  - Emita o relatório padrão: parágrafo no presente do indicativo
+    sintetizando o que o TRT decidiu, fórmula de transição, transcrição
+    integral do trecho do acórdão regional ([[TRANSCRICAO1]]), e
+    parágrafo sintetizando as razões da parte recorrente.
+  - **NÃO redija análise jurídica de mérito. NÃO decida. NÃO escreva
+    "conheço/não conheço/dou provimento/nego provimento".**
+  - Em seguida, emita um bloco [[ALERTA_VERMELHO]] com o texto:
+    "Sem modelo de fundamentação cadastrado para este tema —
+    análise pendente. Redator humano deve preencher, ou cadastrar
+    um modelo via 'Aprender fundamentação' em caso análogo."
+  - Em seguida, emita UM ÚNICO bloco `[[CORPO]]` contendo apenas:
+    "TODO: análise jurídica pendente."
+  - Termine ali e passe ao próximo tema.
+
+No `DISPOSITIVO` final, liste:
+  - Para temas COM modelo: a conclusão concreta ("Conheço do Recurso
+    de Revista e dou-lhe provimento...").
+  - Para temas SEM modelo: "Quanto ao TEMA - X, a análise está
+    pendente — redator humano deverá complementar."
+
+A `conclusao_sugerida` do dossiê é apenas referência interna do
+analisador — ela NÃO autoriza você a decidir um tema que não tenha
+modelo cadastrado.
+
 # FUNDAMENTAÇÕES SUGERIDAS POR TEMA
 
 A base do gabinete contém fundamentações já redigidas em casos análogos.
 Quando relevantes ao tema corrente, **use-as como ponto de partida** —
 adapte ao caso concreto, ajustando partes, datas, valores e nuances
-factuais. Se nenhuma das sugestões se aplicar ao tema atual, ignore-as e
-redija do zero. NUNCA copie cegamente; sempre confira aderência factual.
+factuais. NUNCA copie cegamente; sempre confira aderência factual.
 
 {fundamentos_block}
 
@@ -524,23 +564,51 @@ def _validate_minuta_structure(text: str) -> list[str]:
 
 def _format_fundamentos_block(
     fundamentos_por_tema: dict[str, list[dict[str, Any]]] | None,
+    dossie: dict[str, Any] | None = None,
 ) -> str:
-    if not fundamentos_por_tema:
-        return "(nenhum modelo aderente na base do gabinete para os temas deste caso.)"
+    """Monta a seção de fundamentações por tema do prompt.
+
+    Lista, separadamente:
+      1. Temas COM modelo → bloco com título/resumo/corpo de cada modelo.
+      2. Temas SEM modelo → lista nominal pra que o LLM saiba quais NÃO
+         decidir (apenas resumir + emitir alerta + TODO no lugar da análise).
+    """
+    all_temas: list[str] = []
+    if dossie:
+        for r in dossie.get("recursos") or []:
+            for t in r.get("temas") or []:
+                nome = str(t.get("nome", "")).strip()
+                if nome and nome not in all_temas:
+                    all_temas.append(nome)
+
+    has_models = {k: v for k, v in (fundamentos_por_tema or {}).items() if v}
     parts: list[str] = []
-    for tema, items in fundamentos_por_tema.items():
-        if not items:
-            continue
-        parts.append(f"## Tema: {tema}")
-        for i, it in enumerate(items, start=1):
-            titulo = it.get("titulo") or "(sem título)"
-            resumo = it.get("resumo") or ""
-            corpo = it.get("corpo_md") or ""
-            parts.append(f"### Modelo {i} — {titulo}")
-            if resumo:
-                parts.append(f"_{resumo}_")
-            parts.append(corpo)
-            parts.append("")
+
+    if has_models:
+        parts.append("## Temas COM modelo (redigir análise jurídica adaptando o modelo):")
+        for tema, items in has_models.items():
+            parts.append(f"### Tema: {tema}")
+            for i, it in enumerate(items, start=1):
+                titulo = it.get("titulo") or "(sem título)"
+                resumo = it.get("resumo") or ""
+                corpo = it.get("corpo_md") or ""
+                parts.append(f"#### Modelo {i} — {titulo}")
+                if resumo:
+                    parts.append(f"_{resumo}_")
+                parts.append(corpo)
+                parts.append("")
+    else:
+        parts.append("(nenhum modelo aderente na base do gabinete para os temas deste caso.)")
+
+    sem_modelo = [t for t in all_temas if t not in has_models]
+    if sem_modelo:
+        parts.append("")
+        parts.append(
+            "## Temas SEM modelo (NÃO decidir — apenas resumir e deixar placeholder TODO):"
+        )
+        for t in sem_modelo:
+            parts.append(f"- {t}")
+
     return "\n".join(parts).strip() or "(nenhum modelo aderente.)"
 
 
@@ -558,7 +626,7 @@ def build_minuta_draft(
     import json as _json
 
     marco_legal = compute_marco_legal(acordao_regional_data) or "(não informado)"
-    fundamentos_block = _format_fundamentos_block(fundamentos_por_tema)
+    fundamentos_block = _format_fundamentos_block(fundamentos_por_tema, dossie)
 
     prompt = (
         PROMPT_TEMPLATE.replace("{dossie}", _json.dumps(dossie, ensure_ascii=False, indent=2))

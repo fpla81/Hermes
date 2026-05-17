@@ -240,3 +240,54 @@ def test_normalize_then_validate_is_clean() -> None:
     problems = _validate_minuta_structure(normalized)
     # não pode mais ter aviso de marcador desconhecido
     assert all("marcador desconhecido" not in p for p in problems)
+
+
+def test_fundamentos_block_lists_temas_sem_modelo() -> None:
+    """Quando dossie tem temas mas sem modelo, listar nominalmente."""
+    from hermes_api.services.minuta_draft import _format_fundamentos_block
+
+    dossie = {
+        "recursos": [
+            {
+                "tipo": "recurso_revista",
+                "temas": [
+                    {"nome": "DANO MORAL - QUANTUM"},
+                    {"nome": "HORAS EXTRAS - DIVISOR"},
+                ],
+            }
+        ]
+    }
+    fundamentos = {
+        "DANO MORAL - QUANTUM": [
+            {"titulo": "tese", "resumo": "x", "corpo_md": "y"}
+        ],
+    }
+    block = _format_fundamentos_block(fundamentos, dossie)
+    assert "Temas COM modelo" in block
+    assert "DANO MORAL - QUANTUM" in block
+    assert "Temas SEM modelo" in block
+    assert "HORAS EXTRAS - DIVISOR" in block
+
+
+def test_fundamentos_block_all_temas_sem_modelo() -> None:
+    """Sem nenhum modelo, todos os temas aparecem como SEM modelo."""
+    from hermes_api.services.minuta_draft import _format_fundamentos_block
+
+    dossie = {
+        "recursos": [
+            {"tipo": "recurso_revista", "temas": [{"nome": "TEMA A"}, {"nome": "TEMA B"}]}
+        ]
+    }
+    block = _format_fundamentos_block(None, dossie)
+    assert "Temas SEM modelo" in block
+    assert "TEMA A" in block
+    assert "TEMA B" in block
+    assert "Temas COM modelo" not in block
+
+
+def test_prompt_contains_policy_section() -> None:
+    """Prompt deve conter a regra de não decidir sem modelo."""
+    assert "POLÍTICA DE REDAÇÃO" in PROMPT_TEMPLATE
+    assert "Tema SEM modelo" in PROMPT_TEMPLATE
+    assert "TODO: análise jurídica pendente" in PROMPT_TEMPLATE
+    assert "NÃO decida" in PROMPT_TEMPLATE or "NÃO redija análise jurídica de mérito" in PROMPT_TEMPLATE
