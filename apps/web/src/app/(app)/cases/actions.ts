@@ -330,3 +330,41 @@ export async function learnFundamentosAction(
     return { error: e instanceof Error ? e.message : "erro" };
   }
 }
+
+export interface ExtractState {
+  ok?: boolean;
+  fundamentos?: import("@/lib/fundamentos-types").FundamentoExtractedItem[];
+  error?: string;
+}
+
+export async function extractFundamentosAction(
+  caseId: string,
+): Promise<ExtractState> {
+  if (!caseId) return { error: "case_id ausente" };
+  const { extractFundamentos } = await import("@/lib/fundamentos");
+  try {
+    const res = await extractFundamentos(caseId);
+    return { ok: true, fundamentos: res.fundamentos };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "erro" };
+  }
+}
+
+export interface BulkSaveState {
+  ok?: boolean;
+  saved?: number;
+  error?: string;
+}
+
+export async function saveFundamentosAction(
+  items: import("@/lib/fundamentos-types").FundamentoExtractedItem[],
+): Promise<BulkSaveState> {
+  if (!items.length) return { ok: true, saved: 0 };
+  const { bulkSaveFundamentos } = await import("@/lib/fundamentos");
+  try {
+    const saved = await bulkSaveFundamentos(items);
+    return { ok: true, saved: saved.length };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "erro" };
+  }
+}

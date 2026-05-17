@@ -7,9 +7,41 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..auth import current_user_id, require_manager
 from ..db import get_db
 from ..models.fundamento import Fundamento
-from ..schemas.fundamento import FundamentoRead, FundamentoUpdate
+from ..schemas.fundamento import FundamentoCreate, FundamentoRead, FundamentoUpdate
 
 router = APIRouter(prefix="/fundamentos", tags=["fundamentos"])
+
+
+@router.post("/bulk", response_model=list[FundamentoRead])
+async def bulk_create_fundamentos(
+    payload: list[FundamentoCreate],
+    user_id: str = Depends(current_user_id),
+    _: str = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+) -> list[Fundamento]:
+    """Salva em lote uma seleção de fundamentações extraídas via
+    ``/cases/{id}/extract-fundamentos``."""
+    created: list[Fundamento] = []
+    for item in payload:
+        tema = " ".join(item.tema.upper().split())
+        f = Fundamento(
+            user_id=user_id,
+            tema=tema,
+            titulo=item.titulo,
+            corpo_md=item.corpo_md,
+            tags=item.tags,
+            resumo=item.resumo,
+            conclusao_provimento=item.conclusao_provimento,
+            conclusao_nao_conhecimento=item.conclusao_nao_conhecimento,
+            source_case_id=item.source_case_id,
+        )
+        db.add(f)
+        created.append(f)
+    if created:
+        await db.commit()
+        for f in created:
+            await db.refresh(f)
+    return created
 
 
 @router.get("", response_model=list[FundamentoRead])

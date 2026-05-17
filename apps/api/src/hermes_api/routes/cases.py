@@ -433,6 +433,45 @@ async def generate_minuta_draft(
     return {"text": draft}
 
 
+@router.post("/{case_id}/extract-fundamentos")
+async def extract_fundamentos(
+    case_id: uuid.UUID,
+    user_id: str = Depends(current_user_id),
+    _: str = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Roda o LLM e devolve as fundamentações **sem salvar** no banco.
+
+    O frontend mostra o resultado num diálogo de seleção; o usuário
+    escolhe quais salvar (e edita título/tags se quiser) antes de POSTar
+    em ``/fundamentos/bulk``.
+    """
+    case = await _get_owned_case(case_id, user_id, db)
+    if not case.minuta_md:
+        raise HTTPException(
+            status_code=status.HTTP_412_PRECONDITION_FAILED,
+            detail="salve a minuta antes de aprender",
+        )
+    items = extract_from_minuta(case)
+    return {
+        "case_id": str(case.id),
+        "extracted": len(items),
+        "fundamentos": [
+            {
+                "tema": it.tema,
+                "titulo": it.titulo,
+                "corpo_md": it.corpo_md,
+                "tags": it.tags,
+                "resumo": it.resumo,
+                "conclusao_provimento": it.conclusao_provimento,
+                "conclusao_nao_conhecimento": it.conclusao_nao_conhecimento,
+                "source_case_id": str(it.source_case_id) if it.source_case_id else None,
+            }
+            for it in items
+        ],
+    }
+
+
 @router.post("/{case_id}/learn-fundamentos")
 async def learn_fundamentos(
     case_id: uuid.UUID,
@@ -440,7 +479,8 @@ async def learn_fundamentos(
     _: str = Depends(require_manager),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Extrai fundamentações da minuta final e salva no banco do usuário."""
+    """Compat: extrai e salva tudo de uma vez. Para o fluxo novo com
+    seleção, use ``/extract-fundamentos`` + ``/fundamentos/bulk``."""
     case = await _get_owned_case(case_id, user_id, db)
     if not case.minuta_md:
         raise HTTPException(

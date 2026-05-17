@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import {
   Code2,
   Download,
@@ -13,16 +13,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import type { FundamentoExtractedItem } from "@/lib/fundamentos-types";
 
 import {
+  extractFundamentosAction,
   generateMinutaDraftAction,
-  learnFundamentosAction,
   saveMinutaAction,
   triggerDocxAction,
-  type LearnState,
   type MinutaDraftState,
   type SaveMinutaState,
 } from "../actions";
+import { LearnFundamentosDialog } from "./learn-dialog";
 import { MinutaTiptap } from "./minuta-tiptap";
 
 const INITIAL_DRAFT: MinutaDraftState = {};
@@ -52,21 +53,28 @@ export function MinutaEditor({
     saveMinutaAction,
     INITIAL_SAVE,
   );
-  const [learnState, learnFormAction, learning] = useActionState(
-    learnFundamentosAction,
-    {} as LearnState,
-  );
   const [showRaw, setShowRaw] = useState(false);
+  const [extracting, startExtract] = useTransition();
+  const [extracted, setExtracted] = useState<FundamentoExtractedItem[] | null>(
+    null,
+  );
+  const [extractError, setExtractError] = useState<string | null>(null);
 
   if (draftState.text && draftState.text !== text && !text.trim()) {
     setText(draftState.text);
   }
 
-  const learnMsg = learnState.ok
-    ? learnState.learned && learnState.learned > 0
-      ? `${learnState.learned} fundamentação${learnState.learned > 1 ? "ões" : ""} guardada${learnState.learned > 1 ? "s" : ""} na base.`
-      : "Nenhuma fundamentação extraída — verifique se a minuta está salva e bate com o dossiê."
-    : null;
+  const handleLearn = () => {
+    setExtractError(null);
+    startExtract(async () => {
+      const res = await extractFundamentosAction(caseId);
+      if (res.error) {
+        setExtractError(res.error);
+      } else {
+        setExtracted(res.fundamentos ?? []);
+      }
+    });
+  };
 
   return (
     <div className="space-y-5">
@@ -113,33 +121,27 @@ export function MinutaEditor({
         )}
 
         {canLearn && (
-          <form action={learnFormAction} className="ml-auto">
-            <input type="hidden" name="case_id" value={caseId} />
-            <Button
-              type="submit"
-              disabled={!hasMinuta || learning}
-              variant="success"
-              title={
-                hasMinuta
-                  ? "Extrai as fundamentações da minuta e salva na base do gabinete"
-                  : "Salve a minuta primeiro"
-              }
-            >
-              <GraduationCap className="h-4 w-4" />
-              {learning ? "Aprendendo…" : "Aprender fundamentação"}
-            </Button>
-          </form>
+          <Button
+            type="button"
+            onClick={handleLearn}
+            disabled={!hasMinuta || extracting}
+            variant="success"
+            className="ml-auto"
+            title={
+              hasMinuta
+                ? "Extrai as fundamentações da minuta para você revisar e escolher quais salvar"
+                : "Salve a minuta primeiro"
+            }
+          >
+            <GraduationCap className="h-4 w-4" />
+            {extracting ? "Extraindo…" : "Aprender fundamentação"}
+          </Button>
         )}
       </div>
 
-      {learnMsg && (
-        <p className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs text-success">
-          {learnMsg}
-        </p>
-      )}
-      {learnState.error && (
+      {extractError && (
         <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-          {learnState.error}
+          {extractError}
         </p>
       )}
 
@@ -198,6 +200,14 @@ export function MinutaEditor({
           )}
         </div>
       </form>
+
+      {extracted !== null && (
+        <LearnFundamentosDialog
+          open={true}
+          onClose={() => setExtracted(null)}
+          initial={extracted}
+        />
+      )}
     </div>
   );
 }

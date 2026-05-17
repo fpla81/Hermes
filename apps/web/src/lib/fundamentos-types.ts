@@ -22,6 +22,23 @@ export interface LearnResult {
   }>;
 }
 
+export interface FundamentoExtractedItem {
+  tema: string;
+  titulo: string;
+  corpo_md: string;
+  tags: string[] | null;
+  resumo: string | null;
+  conclusao_provimento: string | null;
+  conclusao_nao_conhecimento: string | null;
+  source_case_id: string | null;
+}
+
+export interface ExtractResult {
+  case_id: string;
+  extracted: number;
+  fundamentos: FundamentoExtractedItem[];
+}
+
 export interface FundamentoUpdate {
   tema?: string;
   titulo?: string;

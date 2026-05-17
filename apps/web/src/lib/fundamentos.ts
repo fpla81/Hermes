@@ -2,12 +2,20 @@ import "server-only";
 
 import { apiFetch, apiJson } from "./api";
 import type {
+  ExtractResult,
   Fundamento,
+  FundamentoExtractedItem,
   FundamentoUpdate,
   LearnResult,
 } from "./fundamentos-types";
 
-export type { Fundamento, FundamentoUpdate, LearnResult } from "./fundamentos-types";
+export type {
+  ExtractResult,
+  Fundamento,
+  FundamentoExtractedItem,
+  FundamentoUpdate,
+  LearnResult,
+} from "./fundamentos-types";
 
 export async function listFundamentos(opts?: {
   q?: string;
@@ -38,5 +46,22 @@ export async function updateFundamento(
 export async function learnFundamentos(caseId: string): Promise<LearnResult> {
   return apiJson<LearnResult>(`/cases/${caseId}/learn-fundamentos`, {
     method: "POST",
+  });
+}
+
+export async function extractFundamentos(
+  caseId: string,
+): Promise<ExtractResult> {
+  return apiJson<ExtractResult>(`/cases/${caseId}/extract-fundamentos`, {
+    method: "POST",
+  });
+}
+
+export async function bulkSaveFundamentos(
+  items: FundamentoExtractedItem[],
+): Promise<Fundamento[]> {
+  return apiJson<Fundamento[]>(`/fundamentos/bulk`, {
+    method: "POST",
+    body: JSON.stringify(items),
   });
 }

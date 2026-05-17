@@ -170,7 +170,7 @@ export function MinutaTiptap({ value, onChange }: Props) {
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-1 rounded-md border bg-muted/40 p-1">
+      <div className="sticky top-16 z-20 flex flex-wrap items-center gap-1 rounded-md border bg-background/95 p-1 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <button
           type="button"
           className={`${btnBase} ${isCorpoActive ? btnActive : ""}`}
