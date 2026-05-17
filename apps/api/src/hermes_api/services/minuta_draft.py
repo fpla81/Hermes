@@ -166,10 +166,9 @@ match, use o formato:
   Linha 3 (apenas quando ``tese`` não for vazia): ``Tese firmada:
   {tese}.``
 
-Quando ``kind == "media"``, prefixe o bloco com:
-``Possível aderência (confirmar manualmente): `` antes de "Tema {numero}".
-
-Quando ``kind == "alta"``, sem prefixo — escreva direto "Tema X do TST…".
+Todos os matches presentes neste estágio já passaram por verificação
+crítica em duas etapas (``kind == "alta"``); escreva direto "Tema X do
+TST…" sem prefixo de incerteza.
 
 Se o tema não tem ``repetitivos_matches`` ou a lista está vazia, NÃO
 emita alerta verde.

@@ -18,8 +18,9 @@ export interface RepetitivoMatch {
   situacao: string;
   tese: string | null;
   confidence: number;
-  kind: "alta" | "media";
+  kind: "alta";
   justificativa: string | null;
+  verificacao_razao?: string | null;
 }
 
 export interface AnalysisTema {

@@ -1,9 +1,17 @@
-"""Match dos temas do dossiê × tabela de Repetitivos do TST.
+"""Match dos temas do dossiê × tabela de Repetitivos do TST (two-stage).
 
-Depois do ``build_dossie``, este service pergunta ao LLM se cada tema do
-caso tem aderência a algum repetitivo cadastrado. Os matches voltam no
-dossiê (campo ``repetitivos_matches`` por tema) e o prompt do
-``minuta_draft`` surfaceia como ``[[ALERTA_VERDE]]``.
+Stage 1 — triagem: para cada tema do dossiê, envia tabela completa
+(formato compacto) ao LLM e recolhe até 5 candidatos com confidence ≥ 0.6.
+Critérios duros + exemplos negativos no prompt pra reduzir falso positivo
+de cara.
+
+Stage 2 — verificação crítica: pra cada tema (batch dos candidatos), novo
+prompt confronta o tema do caso (com acórdão recorrido) com a descrição
+COMPLETA + tese firmada de cada candidato. LLM devolve confirmado=true/false
++ razão. Só os confirmados viram match final no dossiê.
+
+Resultado: campo ``repetitivos_matches`` por tema, sempre com ``kind="alta"``
+(nível "media" foi descontinuado — falso positivo demais).
 """
 
 from __future__ import annotations
@@ -20,10 +28,13 @@ from ..models.tema_repetitivo import TemaRepetitivo
 
 log = logging.getLogger(__name__)
 
-CONF_HIGH = 0.7
-CONF_MEDIUM = 0.4
+# Confidence mínimo pra um candidato sair do stage 1.
+STAGE1_MIN_CONFIDENCE = 0.6
+# Stage 2 só aceita confirmado=true; confidence_final volta como métrica
+# informativa (não-bloqueante a partir deste ponto).
+STAGE2_MIN_CONFIDENCE = 0.7
 
-_PROMPT = """Você é um assistente jurídico do TST. Analise se o tema
+_STAGE1_PROMPT = """Você é um assistente jurídico do TST. Analise se o tema
 abaixo, extraído da análise de um caso concreto, tem aderência a algum
 dos temas da tabela oficial de Recursos de Revista Repetitivos do TST.
 
@@ -37,6 +48,33 @@ descrição curta`):
 
 {tabela}
 
+CRITÉRIOS DE ADERÊNCIA (regra rígida — todos devem ser satisfeitos):
+
+1. **Mesma matéria jurídica nuclear.** Não basta toque tangencial nem
+   compartilhar área (trabalhista, processual). Tem que ser a mesma
+   controvérsia jurídica de fundo.
+2. **Mesmo conflito de tese.** Não basta "ambos falam de horas extras".
+   Tem que ser o mesmo ponto controvertido (ex.: divisor aplicável ao
+   bancário com jornada 6h — não vale pra "incidência de horas extras
+   sobre adicional noturno").
+3. **Mesmo dispositivo legal / súmula em disputa**, quando o repetitivo
+   gira em torno de um dispositivo específico.
+
+EXEMPLOS NEGATIVOS (estes NÃO são aderência — não inclua):
+
+- Caso discute "intervalo intrajornada do art. 71 da CLT" e Tema NNN
+  trata de "intervalo interjornada do art. 66 da CLT". Mesma área, mesmo
+  diploma, mas conflitos distintos.
+- Caso invoca "Súmula 85 do TST" sobre compensação de jornada, e Tema
+  NNN também invoca a Súmula 85, mas pra discutir banco de horas em
+  norma coletiva. Mesmo permissivo, conflito distinto.
+- Caso é "preliminar de nulidade por negativa de prestação jurisdicional"
+  e Tema NNN trata de mérito de horas extras. Sem ligação meritória.
+
+DIRETRIZ DE CALIBRAÇÃO: **prefira FALSO NEGATIVO a FALSO POSITIVO.** Em
+dúvida razoável, NÃO inclua. Vai existir uma segunda etapa de verificação
+crítica; aqui você está fazendo triagem.
+
 Responda APENAS com JSON puro, sem ``` e sem texto adicional:
 
 {
@@ -45,13 +83,59 @@ Responda APENAS com JSON puro, sem ``` e sem texto adicional:
   ]
 }
 
-Regras:
-- "confidence" entre 0 e 1: 0.7+ = aderência clara; 0.4-0.7 = possível
-  aderência (mesma matéria, mas com nuances); abaixo de 0.4, não inclua.
+Regras formais:
+- "confidence" entre 0 e 1. Use ≥ 0.6 apenas pra aderência que satisfaça
+  os 3 critérios acima. Abaixo de 0.6, NÃO inclua.
 - "justificativa" curta (≤ 200 chars), apontando o ponto de aderência.
 - Se nenhum repetitivo aderir, devolva ``{"matches": []}``.
 - Ordene por confidence decrescente.
-- Inclua no máximo 5 matches.
+- Inclua no MÁXIMO 5 matches (preferindo qualidade a quantidade).
+"""
+
+
+_STAGE2_PROMPT = """Você é um assistente jurídico do TST. Vai fazer a
+**verificação crítica** de candidatos a aderência entre o tema do caso
+abaixo e a lista de Temas de Recursos de Revista Repetitivos pré-selecionados
+por uma primeira triagem.
+
+Sua tarefa: para CADA candidato, decidir se realmente há aderência (mesma
+matéria nuclear + mesmo conflito de tese), olhando agora a descrição
+**completa** do repetitivo e a tese firmada quando houver.
+
+TEMA DO CASO:
+- nome: {nome}
+- fundamentos argumentativos: {fundamentos}
+- permissivos invocados: {permissivos}
+- acórdão recorrido (resumo): {acordao_resumo}
+
+CANDIDATOS A VERIFICAR:
+
+{candidatos_block}
+
+REGRA: confirmado=true APENAS se a mesma matéria nuclear E o mesmo
+conflito de tese. Diferença de conflito (ex.: ambos falam de horas
+extras, mas um discute divisor e o outro adicional noturno) = false.
+Diferença de matéria (intervalo intrajornada vs interjornada) = false.
+Em dúvida razoável, retorne false. Prefira FALSO NEGATIVO.
+
+Responda APENAS com JSON puro, sem ``` e sem texto adicional:
+
+{
+  "verificacoes": [
+    {
+      "numero": 42,
+      "confirmado": true,
+      "razao": "...",
+      "confidence_final": 0.9
+    }
+  ]
+}
+
+Regras formais:
+- Devolva UMA entrada por candidato (mesmos ``numero`` recebidos).
+- "razao" curta (≤ 200 chars).
+- "confidence_final" 0..1, refletindo o grau de aderência depois da
+  verificação. Ignorada se confirmado=false.
 """
 
 
@@ -65,14 +149,6 @@ def _extract_json(text: str) -> dict[str, Any] | None:
         return None
 
 
-def _classify_kind(confidence: float) -> str | None:
-    if confidence >= CONF_HIGH:
-        return "alta"
-    if confidence >= CONF_MEDIUM:
-        return "media"
-    return None
-
-
 def _format_tabela(repetitivos: list[TemaRepetitivo]) -> str:
     parts: list[str] = []
     for r in repetitivos:
@@ -84,14 +160,36 @@ def _format_tabela(repetitivos: list[TemaRepetitivo]) -> str:
     return "\n".join(parts)
 
 
-def _match_one_tema(
+def _format_candidatos(
+    candidatos: list[dict[str, Any]],
+    by_numero: dict[int, TemaRepetitivo],
+) -> str:
+    parts: list[str] = []
+    for c in candidatos:
+        numero = int(c["numero"])
+        ref = by_numero.get(numero)
+        if not ref:
+            continue
+        desc = (ref.descricao or "").strip()
+        tese = (ref.tese or "").strip()
+        parts.append(f"### Tema {numero} [{ref.situacao}]")
+        parts.append(f"**Descrição completa:**\n{desc}")
+        if tese:
+            parts.append(f"**Tese firmada:**\n{tese}")
+        primeira = c.get("justificativa")
+        if primeira:
+            parts.append(f"_(triagem: {primeira})_")
+        parts.append("")
+    return "\n".join(parts).strip()
+
+
+def _stage1_triagem(
     tema: dict[str, Any],
-    repetitivos: list[TemaRepetitivo],
     tabela_formatted: str,
 ) -> list[dict[str, Any]]:
-    """Roda o LLM uma vez pro tema; devolve lista (vazia se nada bater)."""
+    """Devolve até 5 candidatos com confidence ≥ STAGE1_MIN_CONFIDENCE."""
     provider = get_llm_provider()
-    if isinstance(provider, StubProvider) or not repetitivos:
+    if isinstance(provider, StubProvider):
         return []
 
     fundamentos = " | ".join(tema.get("fundamentos_argumentativos") or [])[:1500]
@@ -99,56 +197,164 @@ def _match_one_tema(
     nome = str(tema.get("nome", "")).strip() or "(sem nome)"
 
     prompt = (
-        _PROMPT.replace("{nome}", nome)
+        _STAGE1_PROMPT.replace("{nome}", nome)
         .replace("{fundamentos}", fundamentos or "(nenhum)")
         .replace("{permissivos}", permissivos or "(nenhum)")
         .replace("{tabela}", tabela_formatted)
     )
-
     try:
         raw = provider.analyze(prompt)
     except Exception as exc:  # noqa: BLE001
-        log.warning("repetitivos_match LLM call falhou: %s", exc)
+        log.warning("repetitivos_match stage1 LLM falhou: %s", exc)
         return []
 
     parsed = _extract_json(raw)
     if not parsed:
         return []
-    raw_matches = parsed.get("matches") or []
-
-    out: list[dict[str, Any]] = []
-    by_numero = {r.numero: r for r in repetitivos}
-    for m in raw_matches:
+    candidatos: list[dict[str, Any]] = []
+    for m in parsed.get("matches") or []:
         try:
             numero = int(m.get("numero"))
-        except (TypeError, ValueError):
-            continue
-        ref = by_numero.get(numero)
-        if ref is None:
-            continue
-        try:
             confidence = float(m.get("confidence", 0.0))
         except (TypeError, ValueError):
             continue
-        kind = _classify_kind(confidence)
-        if not kind:
+        if confidence < STAGE1_MIN_CONFIDENCE:
             continue
-        justificativa = str(m.get("justificativa", "")).strip()[:400] or None
+        candidatos.append(
+            {
+                "numero": numero,
+                "confidence": confidence,
+                "justificativa": str(m.get("justificativa", "")).strip()[:400] or None,
+            }
+        )
+    candidatos.sort(key=lambda x: x["confidence"], reverse=True)
+    return candidatos[:5]
+
+
+def _stage2_verificar(
+    tema: dict[str, Any],
+    candidatos: list[dict[str, Any]],
+    by_numero: dict[int, TemaRepetitivo],
+) -> list[dict[str, Any]]:
+    """Confronta cada candidato com a descrição completa + tese e devolve
+    a lista de verificações ({numero, confirmado, razao, confidence_final}).
+    """
+    if not candidatos:
+        return []
+    provider = get_llm_provider()
+    if isinstance(provider, StubProvider):
+        return []
+
+    fundamentos = " | ".join(tema.get("fundamentos_argumentativos") or [])[:1500]
+    permissivos = " | ".join(tema.get("permissivos_invocados") or [])[:1500]
+    nome = str(tema.get("nome", "")).strip() or "(sem nome)"
+    acordao = str(tema.get("acordao_recorrido_resumo", "")).strip() or "(não disponível)"
+    candidatos_block = _format_candidatos(candidatos, by_numero)
+
+    prompt = (
+        _STAGE2_PROMPT.replace("{nome}", nome)
+        .replace("{fundamentos}", fundamentos or "(nenhum)")
+        .replace("{permissivos}", permissivos or "(nenhum)")
+        .replace("{acordao_resumo}", acordao)
+        .replace("{candidatos_block}", candidatos_block)
+    )
+    try:
+        raw = provider.analyze(prompt)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("repetitivos_match stage2 LLM falhou: %s", exc)
+        return []
+
+    parsed = _extract_json(raw)
+    if not parsed:
+        return []
+
+    out: list[dict[str, Any]] = []
+    for v in parsed.get("verificacoes") or []:
+        try:
+            numero = int(v.get("numero"))
+        except (TypeError, ValueError):
+            continue
+        confirmado = bool(v.get("confirmado"))
+        razao = str(v.get("razao", "")).strip()[:400] or None
+        try:
+            conf_final = float(v.get("confidence_final", 0.0))
+        except (TypeError, ValueError):
+            conf_final = 0.0
+        out.append(
+            {
+                "numero": numero,
+                "confirmado": confirmado,
+                "razao": razao,
+                "confidence_final": conf_final,
+            }
+        )
+    return out
+
+
+def _match_one_tema(
+    tema: dict[str, Any],
+    repetitivos: list[TemaRepetitivo],
+    tabela_formatted: str,
+) -> list[dict[str, Any]]:
+    """Pipeline two-stage. Devolve só os candidatos confirmados na verificação."""
+    if not repetitivos:
+        return []
+
+    candidatos = _stage1_triagem(tema, tabela_formatted)
+    if not candidatos:
+        log.debug("repetitivos_match: stage1 sem candidatos pro tema %s", tema.get("nome"))
+        return []
+
+    by_numero = {r.numero: r for r in repetitivos}
+    verificacoes = _stage2_verificar(tema, candidatos, by_numero)
+    if not verificacoes:
+        log.debug(
+            "repetitivos_match: stage2 sem resposta pro tema %s — descartando %d candidatos",
+            tema.get("nome"),
+            len(candidatos),
+        )
+        return []
+
+    by_cand = {c["numero"]: c for c in candidatos}
+    verif_by_numero = {v["numero"]: v for v in verificacoes}
+
+    out: list[dict[str, Any]] = []
+    for numero, v in verif_by_numero.items():
+        if not v["confirmado"]:
+            log.debug(
+                "repetitivos_match: tema %s rejeitou Tema %d na verificação — %s",
+                tema.get("nome"),
+                numero,
+                v.get("razao"),
+            )
+            continue
+        if v["confidence_final"] < STAGE2_MIN_CONFIDENCE:
+            log.debug(
+                "repetitivos_match: tema %s confirmou Tema %d mas confidence final %.2f abaixo do limiar",
+                tema.get("nome"),
+                numero,
+                v["confidence_final"],
+            )
+            continue
+        ref = by_numero.get(numero)
+        if not ref:
+            continue
+        cand_meta = by_cand.get(numero, {})
         out.append(
             {
                 "numero": ref.numero,
                 "descricao": ref.descricao,
                 "situacao": ref.situacao,
                 "tese": ref.tese,
-                "confidence": round(confidence, 2),
-                "kind": kind,
-                "justificativa": justificativa,
+                "confidence": round(v["confidence_final"], 2),
+                "kind": "alta",
+                "justificativa": cand_meta.get("justificativa"),
+                "verificacao_razao": v.get("razao"),
             }
         )
 
-    # ordena por confidence desc e limita 5
     out.sort(key=lambda x: x["confidence"], reverse=True)
-    return out[:5]
+    return out
 
 
 def attach_matches_to_dossie(
