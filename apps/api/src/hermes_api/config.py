@@ -40,6 +40,15 @@ class Settings(BaseSettings):
     gemini_anonymizer_model: str = Field(
         default="gemini-2.5-flash", validation_alias="GEMINI_ANONYMIZER_MODEL"
     )
+    gemini_read_timeout: float = Field(
+        default=600.0, validation_alias="GEMINI_READ_TIMEOUT"
+    )
+    gemini_connect_timeout: float = Field(
+        default=15.0, validation_alias="GEMINI_CONNECT_TIMEOUT"
+    )
+    gemini_max_retries: int = Field(
+        default=2, validation_alias="GEMINI_MAX_RETRIES"
+    )
     internal_secret: str | None = Field(
         default=None, validation_alias="HERMES_INTERNAL_SECRET"
     )
