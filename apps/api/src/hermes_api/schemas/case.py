@@ -7,6 +7,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from ..models.case import CaseStatus
 
 PROCESSO_RE = re.compile(r"^(\d{6,7})-(\d{2})\.(\d{4})\.(\d)\.(\d{2})\.(\d{4})$")
+# usado pra extrair o número CNJ quando vem com prefixo de recurso
+# (ex.: "Ag-AIRR - 0012007-59.2016.5.03.0097")
+PROCESSO_RE_LOOSE = re.compile(r"(\d{6,7})-(\d{2})\.(\d{4})\.(\d)\.(\d{2})\.(\d{4})")
 
 
 VALID_PARTY_ROLES = {"reclamante", "reclamada", "ministerio_publico"}
@@ -48,7 +51,11 @@ class CaseCreate(BaseModel):
         v = v.strip()
         m = PROCESSO_RE.match(v)
         if not m:
-            raise ValueError("numero_processo deve seguir NNNNNNN-DD.AAAA.J.TR.OOOO")
+            # tenta extrair número CNJ se vier com prefixo tipo "Ag-AIRR - ..."
+            loose = PROCESSO_RE_LOOSE.search(v)
+            if not loose:
+                raise ValueError("numero_processo deve seguir NNNNNNN-DD.AAAA.J.TR.OOOO")
+            m = loose
         seq, dv, ano, justica, tribunal, origem = m.groups()
         return f"{seq.zfill(7)}-{dv}.{ano}.{justica}.{tribunal}.{origem}"
 

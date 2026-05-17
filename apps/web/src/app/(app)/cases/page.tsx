@@ -68,12 +68,12 @@ export default async function CasesPage() {
                   className="block p-5 pb-4"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <p className="font-mono text-xs text-muted-foreground">
-                        {c.numero_processo}
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
+                        Processo
                       </p>
-                      <h3 className="line-clamp-2 font-serif text-lg font-semibold leading-snug text-foreground transition-colors group-hover:text-primary">
-                        {c.titulo || "Sem título"}
+                      <h3 className="line-clamp-2 font-mono text-base font-semibold leading-snug text-foreground transition-colors group-hover:text-primary">
+                        {c.numero_processo}
                       </h3>
                     </div>
                     <CaseStatusBadge status={c.status} />

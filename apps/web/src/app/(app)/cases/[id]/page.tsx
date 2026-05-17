@@ -66,11 +66,11 @@ export default async function CaseDetailPage({
         </Button>
         <header className="flex flex-wrap items-start justify-between gap-4 border-b pb-6">
           <div className="space-y-2">
-            <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-              Processo {c.numero_processo}
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
+              Processo
             </p>
-            <h1 className="font-serif text-3xl font-semibold tracking-tight">
-              {c.titulo || "Sem título"}
+            <h1 className="font-mono text-3xl font-semibold tracking-tight">
+              {c.numero_processo}
             </h1>
             <p className="text-xs text-muted-foreground">
               Criado em{" "}

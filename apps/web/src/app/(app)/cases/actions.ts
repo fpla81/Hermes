@@ -28,12 +28,20 @@ export type CreateCaseState = {
   error?: string;
 };
 
+/** Extrai o número CNJ (NNNNNNN-DD.AAAA.J.TR.OOOO) de uma string que pode
+ *  vir com prefixo de tipo de recurso (ex.: "Ag-AIRR - 0012007-...").
+ *  Se não encontrar, devolve o valor original trimmed. */
+function extractNumeroCnj(raw: string): string {
+  const m = raw.match(/\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}/);
+  return (m ? m[0] : raw).trim();
+}
+
 export async function createCaseAction(
   _prev: CreateCaseState,
   formData: FormData,
 ): Promise<CreateCaseState> {
-  const numero = String(formData.get("numero_processo") ?? "").trim();
-  const titulo = String(formData.get("titulo") ?? "").trim() || null;
+  const rawNumero = String(formData.get("numero_processo") ?? "").trim();
+  const numero = extractNumeroCnj(rawNumero);
   const partiesRaw = String(formData.get("parties_json") ?? "").trim();
   let parties: Party[] = [];
   if (partiesRaw) {
@@ -46,7 +54,7 @@ export async function createCaseAction(
   }
   if (!numero) return { error: "Informe o número do processo." };
   try {
-    await createCase({ numero_processo: numero, titulo, parties });
+    await createCase({ numero_processo: numero, titulo: null, parties });
   } catch (e) {
     if (e instanceof ApiError && e.status === 422) {
       return { error: "Dados inválidos. Confira o número e as partes." };

@@ -78,3 +78,26 @@ def test_html_404_before_capture(client) -> None:
     ).json()
     r = client.get(f"/cases/{created['id']}/html", headers=HEADERS)
     assert r.status_code == 404
+
+
+def test_create_strips_prefix_from_numero() -> None:
+    """Aceita 'Ag-AIRR - 0012007-59.2016.5.03.0097' e guarda só o número."""
+    from hermes_api.schemas.case import CaseCreate
+
+    payload = CaseCreate(numero_processo="Ag-AIRR - 0012007-59.2016.5.03.0097")
+    assert payload.numero_processo == "0012007-59.2016.5.03.0097"
+
+
+def test_create_accepts_bare_numero() -> None:
+    from hermes_api.schemas.case import CaseCreate
+
+    payload = CaseCreate(numero_processo="0012007-59.2016.5.03.0097")
+    assert payload.numero_processo == "0012007-59.2016.5.03.0097"
+
+
+def test_create_rejects_garbage() -> None:
+    import pytest
+    from hermes_api.schemas.case import CaseCreate
+
+    with pytest.raises(ValueError):
+        CaseCreate(numero_processo="qualquer coisa sem número")

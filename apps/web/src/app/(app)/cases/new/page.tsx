@@ -33,17 +33,11 @@ export default function NewCasePage() {
             required
             className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm font-mono shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
-        </div>
-
-        <div className="space-y-1">
-          <label htmlFor="titulo" className="text-sm font-medium">
-            Título (opcional)
-          </label>
-          <input
-            id="titulo"
-            name="titulo"
-            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
+          <p className="text-xs text-muted-foreground">
+            Aceita também com prefixo de recurso (ex.:{" "}
+            <span className="font-mono">Ag-AIRR - 0012007-59.2016.5.03.0097</span>) — o sistema
+            extrai apenas o número.
+          </p>
         </div>
 
         <div className="space-y-2">
