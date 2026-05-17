@@ -1,13 +1,6 @@
 import type { Route } from "next";
 import { redirect } from "next/navigation";
-import {
-  FileText,
-  BookOpen,
-  ScrollText,
-  Settings,
-  Users,
-  Shield,
-} from "lucide-react";
+import { Shield } from "lucide-react";
 
 import { Brand } from "@/components/layout/brand";
 import { SidebarNav, type NavSection } from "@/components/layout/sidebar-nav";
@@ -30,20 +23,20 @@ export default async function AppLayout({
     {
       title: "Trabalho",
       items: [
-        { href: "/cases" as Route, label: "Casos", icon: FileText },
-        { href: "/fundamentos" as Route, label: "Fundamentos", icon: BookOpen },
-        { href: "/templates" as Route, label: "Templates", icon: ScrollText },
+        { href: "/cases" as Route, label: "Casos", icon: "cases" },
+        { href: "/fundamentos" as Route, label: "Fundamentos", icon: "fundamentos" },
+        { href: "/templates" as Route, label: "Templates", icon: "templates" },
       ],
     },
     {
       title: "Conta",
-      items: [{ href: "/settings" as Route, label: "Ajustes", icon: Settings }],
+      items: [{ href: "/settings" as Route, label: "Ajustes", icon: "settings" }],
     },
   ];
   if (isAdmin(role)) {
     sections.push({
       title: "Administração",
-      items: [{ href: "/admin/users" as Route, label: "Usuários", icon: Users }],
+      items: [{ href: "/admin/users" as Route, label: "Usuários", icon: "users" }],
     });
   }
 

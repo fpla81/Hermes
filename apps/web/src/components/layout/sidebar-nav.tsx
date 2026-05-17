@@ -3,14 +3,31 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Route } from "next";
-import type { LucideIcon } from "lucide-react";
+import {
+  BookOpen,
+  FileText,
+  ScrollText,
+  Settings,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
+
+export type NavIcon = "cases" | "fundamentos" | "templates" | "settings" | "users";
+
+const ICONS: Record<NavIcon, LucideIcon> = {
+  cases: FileText,
+  fundamentos: BookOpen,
+  templates: ScrollText,
+  settings: Settings,
+  users: Users,
+};
 
 export interface NavItem {
   href: Route;
   label: string;
-  icon: LucideIcon;
+  icon: NavIcon;
 }
 
 export interface NavSection {
@@ -33,7 +50,7 @@ export function SidebarNav({ sections }: { sections: NavSection[] }) {
             const active =
               pathname === item.href ||
               (item.href !== "/" && pathname.startsWith(item.href + "/"));
-            const Icon = item.icon;
+            const Icon = ICONS[item.icon];
             return (
               <Link
                 key={item.href}
