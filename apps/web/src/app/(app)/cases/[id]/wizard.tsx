@@ -20,6 +20,7 @@ import type { DespachoBlueprint } from "@/lib/cases";
 import { cn } from "@/lib/utils";
 
 import { AnalyzeButton } from "./analyze-button";
+import { AnonymizedPreviewButton } from "./anonymized-preview";
 import { DossiePanel } from "./dossie-panel";
 import { MinutaEditor } from "./minuta-editor";
 import { PartiesPanel } from "./parties-panel";
@@ -263,7 +264,9 @@ function AnalysisStep({
             </p>
           )}
         </div>
-        <AnalyzeButton
+        <div className="flex flex-wrap items-center gap-2">
+          <AnonymizedPreviewButton caseId={caseId} />
+          <AnalyzeButton
           caseId={caseId}
           alreadyAnalyzed={
             Boolean(caseData.analyzed_at) || caseData.status === "ready"
@@ -271,6 +274,7 @@ function AnalysisStep({
           inFlight={caseData.status === "analyzing"}
           lastError={caseData.last_error}
         />
+        </div>
       </div>
       {caseData.analysis_dossie ? (
         <DossiePanel dossie={caseData.analysis_dossie} />

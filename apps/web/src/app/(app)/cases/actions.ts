@@ -368,3 +368,22 @@ export async function saveFundamentosAction(
     return { error: e instanceof Error ? e.message : "erro" };
   }
 }
+
+export interface PreviewState {
+  ok?: boolean;
+  preview?: import("@/lib/cases").AnonymizedPreview;
+  error?: string;
+}
+
+export async function getAnonymizedPreviewAction(
+  caseId: string,
+): Promise<PreviewState> {
+  if (!caseId) return { error: "case_id ausente" };
+  const { fetchAnonymizedPreview } = await import("@/lib/cases");
+  try {
+    const preview = await fetchAnonymizedPreview(caseId);
+    return { ok: true, preview };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "erro" };
+  }
+}

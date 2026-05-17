@@ -266,3 +266,28 @@ export async function deleteStructuredPiece(
   );
   if (!res.ok) throw new Error(`delete falhou: ${res.status}`);
 }
+
+export interface AnonymizedPiecePreview {
+  index: number;
+  tipo: string;
+  parte: string | null;
+  data: string | null;
+  original_chars: number;
+  anonimizado_chars: number;
+  anonimizado: string;
+  substitutions: number;
+  mapping_sample: Record<string, string>;
+}
+
+export interface AnonymizedPreview {
+  case_id: string;
+  parties: Party[];
+  pieces: AnonymizedPiecePreview[];
+  aggregate_mapping_size: number;
+}
+
+export async function fetchAnonymizedPreview(
+  caseId: string,
+): Promise<AnonymizedPreview> {
+  return apiJson<AnonymizedPreview>(`/cases/${caseId}/anonymized-preview`);
+}

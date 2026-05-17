@@ -566,6 +566,45 @@ async def list_structured_pieces(
     return case.structured_pieces or []
 
 
+@router.get("/{case_id}/anonymized-preview")
+async def anonymized_preview(
+    case_id: uuid.UUID,
+    user_id: str = Depends(current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Devolve cada peça do caso anonimizada — exatamente o input que
+    iria para o LLM. Útil pra auditoria antes de rodar a análise."""
+    from ..services.parties_anonymizer import anonymize_with_parties
+
+    case = await _get_owned_case(case_id, user_id, db)
+    parties = list(case.parties or [])
+    out = []
+    aggregate_map: dict[str, str] = {}
+    for i, p in enumerate(case.structured_pieces or []):
+        original = str(p.get("text", ""))
+        result = anonymize_with_parties(original, parties)
+        aggregate_map.update(result.mapping)
+        out.append(
+            {
+                "index": i,
+                "tipo": p.get("tipo"),
+                "parte": p.get("parte"),
+                "data": p.get("data"),
+                "original_chars": len(original),
+                "anonimizado_chars": len(result.text),
+                "anonimizado": result.text,
+                "substitutions": len(result.mapping),
+                "mapping_sample": dict(list(result.mapping.items())[:20]),
+            }
+        )
+    return {
+        "case_id": str(case.id),
+        "parties": parties,
+        "pieces": out,
+        "aggregate_mapping_size": len(aggregate_map),
+    }
+
+
 @router.post("/{case_id}/structured-pieces", response_model=StructuredPiece)
 async def add_structured_piece(
     case_id: uuid.UUID,
