@@ -58,6 +58,7 @@ def test_repetitive_theme_audit_inserts_note() -> None:
 def test_transcricao_styles_have_progressive_indents() -> None:
     """Recuos esquerdos das Transcrições 1/2/3 devem progredir conforme docx.py."""
     import io
+
     from docx import Document
     from hermes_api.services.docx import render_docx
 
