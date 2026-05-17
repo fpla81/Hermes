@@ -1,49 +1,69 @@
 from hermes_api.services.tst_repetitivos import parse_repetitivos_html
 
+# Imita a estrutura real do /recursos-repetitivos/tabela-completa
 SAMPLE_HTML = """
-<html><body>
-<h2>Tabela de Recursos de Revista Repetitivos</h2>
-
-<div class="tema">
-  <h3>Tema 42</h3>
-  <p>Aplicação da Súmula 124 do TST ao bancário com jornada contratual de 6h.</p>
-  <p>Situação: Suspenso por decisão do colegiado em 12/03/2024.</p>
-</div>
-
-<div class="tema">
-  <h3>Tema 87</h3>
-  <p>Validade da norma coletiva que fixa divisor 220 para bancário.</p>
-  <p>Situação: Decidido pelo Pleno em 09/06/2025.</p>
-  <p>Tese firmada: É válida a cláusula de norma coletiva que estabelece divisor 220 para bancário, observado o art. 7º, XXVI da Constituição.</p>
-</div>
-
-<div class="tema">
-  <h3>Tema 99</h3>
-  <p>Tema instaurado em 2024 — Aguardando julgamento.</p>
-</div>
-</body></html>
+<table>
+<tr><th>Tema</th><th>Representativos</th><th>Tese</th><th>Último Movimento</th><th>Há Decisão de Suspensão?</th><th>Relator</th></tr>
+<tr>
+  <td>1</td>
+  <td><a href="https://www.tst.jus.br/processo/IRR-243000-58.2013.5.13.0023">IRR-243000-58.2013.5.13.0023</a></td>
+  <td>Não é legítima e caracteriza lesão moral a exigência de Certidão de Antecedentes Criminais...</td>
+  <td>Transitado em Julgado (Publicado em 22/9/2017)</td>
+  <td>Não</td>
+  <td>Min. Augusto César Leite de Carvalho</td>
+</tr>
+<tr>
+  <td>42</td>
+  <td>IRR-849-83.2013.5.03.0138</td>
+  <td>O divisor aplicável para cálculo das horas extras do bancário, inclusive para os submetidos à jornada de oito horas, é 180 e 220 para as jornadas normais de seis e oito horas.</td>
+  <td>Acórdão publicado em 19/12/2016</td>
+  <td>Não</td>
+  <td>Min. X</td>
+</tr>
+<tr>
+  <td>99</td>
+  <td>IRR-1000-00.2024.5.10.0001</td>
+  <td>Tema sob análise pelo Pleno — aguardando julgamento.</td>
+  <td>Aguardando inclusão em pauta</td>
+  <td>Sim</td>
+  <td>Min. Y</td>
+</tr>
+<tr><td colspan="6">linha de continuação que não tem número — deve ser ignorada</td></tr>
+</table>
 """
 
 
 def test_parse_extracts_numero_e_descricao() -> None:
     out = parse_repetitivos_html(SAMPLE_HTML)
     numeros = sorted(o.numero for o in out)
-    assert numeros == [42, 87, 99]
+    assert numeros == [1, 42, 99]
 
 
-def test_parse_extrai_situacao_suspenso() -> None:
+def test_parse_classifica_suspenso_pela_coluna_suspensao() -> None:
     out = {o.numero: o for o in parse_repetitivos_html(SAMPLE_HTML)}
-    assert out[42].situacao == "suspenso"
+    assert out[99].situacao == "suspenso"
 
 
-def test_parse_extrai_tese_quando_decidido() -> None:
+def test_parse_classifica_decidido_quando_transitado_em_julgado() -> None:
     out = {o.numero: o for o in parse_repetitivos_html(SAMPLE_HTML)}
-    item = out[87]
+    item = out[1]
     assert item.situacao == "decidido"
-    assert item.tese and "divisor 220" in item.tese
+    assert item.tese and "Antecedentes Criminais" in item.tese
 
 
-def test_parse_default_situacao_outro_quando_apenas_aguardando() -> None:
+def test_parse_decidido_com_acordao_publicado() -> None:
     out = {o.numero: o for o in parse_repetitivos_html(SAMPLE_HTML)}
-    # "Aguardando julgamento" não casa nenhum dos sinais → cai em "outro".
-    assert out[99].situacao in ("outro", "julgado")
+    assert out[42].situacao == "decidido"
+    assert out[42].tese and "divisor" in out[42].tese.lower()
+
+
+def test_parse_extrai_link_do_representativo() -> None:
+    out = {o.numero: o for o in parse_repetitivos_html(SAMPLE_HTML)}
+    assert out[1].link == "https://www.tst.jus.br/processo/IRR-243000-58.2013.5.13.0023"
+
+
+def test_parse_ignora_linhas_sem_numero() -> None:
+    """Linha de continuação com colspan e sem dígito não deve gerar tema."""
+    out = parse_repetitivos_html(SAMPLE_HTML)
+    # 3 temas (1, 42, 99) — a linha de continuação some
+    assert len(out) == 3

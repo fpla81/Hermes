@@ -23,9 +23,9 @@ from ..schemas.tema_repetitivo import TemaRepetitivoIn
 
 log = logging.getLogger(__name__)
 
-TST_URL = (
-    "https://www.tst.jus.br/nugep-sp/tabela-de-recursos-de-revista-repetitivos"
-)
+# A página "tabela-de-recursos-de-revista-repetitivos" é só um índice;
+# os temas reais vivem em /recursos-repetitivos/tabela-completa.
+TST_URL = "https://www.tst.jus.br/nugep-sp/recursos-repetitivos/tabela-completa"
 
 # Reaproveita headers realistas de um Chrome em PT-BR (passa WAF do Liferay
 # em IP residencial brasileiro; em IP de datacenter pode levar 403).
@@ -43,116 +43,88 @@ _HEADERS = {
     "Cache-Control": "no-cache",
 }
 
-_NUMERO_RE = re.compile(r"\bTema\s+(?:n[º°.]\s*)?(\d{1,4})\b", re.IGNORECASE)
+_PROCESSO_RE = re.compile(r"(IRR|RR|IRDR)[\s-]+\d[\d.\-/]+", re.IGNORECASE)
 
 
-def _classify_situacao(text: str) -> str:
-    """Heurística simples: o texto adjacente ao tema sinaliza a situação."""
-    lower = text.lower()
-    if "suspens" in lower:
+def _classify_situacao(suspensao_cell: str, movimento_cell: str) -> str:
+    """Mapeia colunas 'Há Decisão de Suspensão?' e 'Último Movimento' para
+    o nosso enum lógico (``suspenso`` / ``decidido`` / ``julgado`` / ``outro``).
+    """
+    suspensao = suspensao_cell.lower()
+    movimento = movimento_cell.lower()
+    if "sim" in suspensao:
         return "suspenso"
-    if "tese firmada" in lower or "tese fixada" in lower or "decidido" in lower:
+    if "transitado em julgado" in movimento or "tese firmada" in movimento:
         return "decidido"
-    if "julgad" in lower:
-        return "julgado"
+    if "julgad" in movimento or "acórdão" in movimento or "acordao" in movimento:
+        return "decidido"
+    if "publicad" in movimento:
+        return "decidido"
     return "outro"
 
 
-def _extract_tese(text: str) -> str | None:
-    """Procura trecho após 'Tese firmada:' / 'Tese:' até ponto final/quebra."""
-    for marker in ("Tese firmada:", "Tese fixada:", "Tese:"):
-        idx = text.find(marker)
-        if idx >= 0:
-            after = text[idx + len(marker):].strip()
-            # corta na primeira quebra dupla ou ~600 chars
-            stop = after.find("\n\n")
-            if stop < 0:
-                stop = min(len(after), 800)
-            tese = after[:stop].strip()
-            if tese:
-                return tese
-    return None
-
-
 def parse_repetitivos_html(html: str) -> list[TemaRepetitivoIn]:
-    """Parser tolerante: varre blocos de texto procurando 'Tema NNN'.
+    """Parseia a /recursos-repetitivos/tabela-completa.
 
-    O DOM exato pode variar (Liferay). A estratégia é: pegar cada elemento
-    textual que contenha 'Tema NNN' e tratar o conteúdo do bloco pai como
-    a descrição + situação + tese.
+    Layout esperado (6 colunas):
+      0: Tema (número, ex.: "1", "2")
+      1: Representativo(s) da Controvérsia
+      2: Tese/Questão Jurídica
+      3: Último Movimento
+      4: Há Decisão de Suspensão?
+      5: Relator(a)
+
+    Estratégia tolerante a rowspan/colspan: para cada <tr> com 6 ou mais
+    células onde a primeira tem dígito puro, considera início de um tema.
+    Linhas subsequentes (continuação) são ignoradas — a estrutura agrega
+    multilinhas no mesmo <tr> em geral.
     """
     soup = BeautifulSoup(html, "html.parser")
     items: dict[int, TemaRepetitivoIn] = {}
 
-    # Itera por elementos com texto significativo (parágrafos, list-items,
-    # cells, divs com pouco aninhamento). Para cada um, vê se cabeçalho
-    # ou início traz "Tema NNN".
-    for node in soup.select("p, li, td, div, h2, h3, h4"):
-        text = node.get_text(" ", strip=True)
-        if not text:
-            continue
-        m = _NUMERO_RE.search(text)
-        if not m:
-            continue
-        try:
-            numero = int(m.group(1))
-        except ValueError:
-            continue
-        if numero in items:
-            continue  # primeira ocorrência ganha
-        # Junta o contexto: o próprio nó + irmãos seguintes até o próximo
-        # "Tema NNN" — pra capturar situação e tese que costumam vir
-        # em parágrafos adjacentes.
-        context_chunks = [text]
-        sib = node.find_next_sibling()
-        steps = 0
-        while sib is not None and steps < 4:
-            sib_text = sib.get_text(" ", strip=True) if hasattr(sib, "get_text") else ""
-            if sib_text and _NUMERO_RE.search(sib_text):
-                break
-            if sib_text:
-                context_chunks.append(sib_text)
-            sib = sib.find_next_sibling()
-            steps += 1
-        context = " \n".join(context_chunks)
+    for table in soup.find_all("table"):
+        for tr in table.find_all("tr"):
+            cells = tr.find_all(["td", "th"])
+            if len(cells) < 6:
+                continue
+            num_text = cells[0].get_text(" ", strip=True).strip()
+            # primeira célula deve ser número puro do tema
+            if not num_text.isdigit():
+                continue
+            try:
+                numero = int(num_text)
+            except ValueError:
+                continue
+            if numero in items:
+                continue
 
-        # descrição = trecho após "Tema NNN" e antes de "Situação"/"Tese"
-        desc_after = _NUMERO_RE.split(context, maxsplit=1)
-        # split com grupo: [pre, numero, post]
-        desc_raw = desc_after[-1] if len(desc_after) >= 2 else context
-        # corta na palavra Situação/Tese se aparecer
-        cut_at = min(
-            (
-                desc_raw.find(token)
-                for token in ("Situação", "Status", "Tese firmada", "Tese fixada", "Tese:")
-                if desc_raw.find(token) >= 0
-            ),
-            default=len(desc_raw),
-        )
-        descricao = desc_raw[:cut_at].strip(" -:–—\n\t")
-        if not descricao:
-            descricao = text  # fallback: linha inteira
+            representativos = cells[1].get_text(" ", strip=True)
+            tese_text = cells[2].get_text(" ", strip=True)
+            movimento = cells[3].get_text(" ", strip=True) if len(cells) > 3 else ""
+            suspensao = cells[4].get_text(" ", strip=True) if len(cells) > 4 else ""
 
-        situacao = _classify_situacao(context)
-        tese = _extract_tese(context) if situacao == "decidido" else None
+            situacao = _classify_situacao(suspensao, movimento)
+            descricao = tese_text or representativos or f"Tema {numero}"
+            tese = tese_text if situacao == "decidido" and tese_text else None
 
-        link = None
-        a = node.find("a", href=True) if hasattr(node, "find") else None
-        if a is not None:
-            href = a.get("href")
-            if href and href.startswith(("http://", "https://")):
-                link = href
+            # link: primeiro <a href> da célula de representativos
+            link = None
+            for a in cells[1].find_all("a", href=True):
+                href = a.get("href")
+                if href and href.startswith(("http://", "https://")):
+                    link = href
+                    break
 
-        try:
-            items[numero] = TemaRepetitivoIn(
-                numero=numero,
-                descricao=descricao[:5000],
-                situacao=situacao,
-                tese=tese,
-                link=link,
-            )
-        except Exception:  # noqa: BLE001
-            continue
+            try:
+                items[numero] = TemaRepetitivoIn(
+                    numero=numero,
+                    descricao=descricao[:5000],
+                    situacao=situacao,
+                    tese=tese[:5000] if tese else None,
+                    link=link,
+                )
+            except Exception:  # noqa: BLE001
+                continue
 
     return list(items.values())
 
