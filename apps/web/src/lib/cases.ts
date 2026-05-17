@@ -22,6 +22,8 @@ export interface AnalysisTema {
   obices_aplicaveis: string[];
   jurisprudencia_citada: string[];
   conclusao_sugerida: string;
+  transcricao_rr_status?: "ok" | "ausente" | "parcial" | "nao_aplicavel";
+  transcricao_rr_alerta?: string | null;
 }
 
 export interface AnalysisRecurso {

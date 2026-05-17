@@ -1,3 +1,7 @@
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AnalysisDossie } from "@/lib/cases";
 
 const TIPO_LABEL: Record<string, string> = {
@@ -17,9 +21,11 @@ const PARTE_LABEL: Record<string, string> = {
 function ListBlock({ label, items }: { label: string; items: string[] }) {
   if (!items?.length) return null;
   return (
-    <div className="space-y-1">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <ul className="ml-4 list-disc space-y-1 text-sm">
+    <div className="space-y-1.5">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <ul className="ml-4 list-disc space-y-1 text-sm leading-relaxed">
         {items.map((it, i) => (
           <li key={i}>{it}</li>
         ))}
@@ -41,58 +47,102 @@ export function DossiePanel({ dossie }: { dossie: AnalysisDossie }) {
   return (
     <div className="space-y-6">
       {hasAlignmentWarning && (
-        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-          <p className="font-medium">Atenção ao alinhamento com o despacho</p>
-          <p className="mt-1 whitespace-pre-wrap">{obs}</p>
+        <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
+          <p className="text-sm font-semibold text-warning">
+            Atenção ao alinhamento com o despacho
+          </p>
+          <p className="mt-1 whitespace-pre-wrap text-xs text-warning/90">
+            {obs}
+          </p>
         </div>
       )}
       {dossie.recursos.map((r, i) => (
-        <article key={i} className="space-y-3 rounded-md border p-4">
-          <header>
-            <h3 className="text-sm font-medium">
-              {TIPO_LABEL[r.tipo] ?? r.tipo} · {PARTE_LABEL[r.parte] ?? r.parte}
-            </h3>
-          </header>
-          {(r.temas || []).map((t, j) => (
-            <section key={j} className="space-y-2 rounded border bg-muted/20 p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <h4 className="text-sm font-semibold">{t.nome}</h4>
-                {(() => {
-                  const refs = t.blueprint_temas ?? (t.blueprint_tema ? [t.blueprint_tema] : []);
-                  if (refs.length === 0) {
-                    return (
-                      <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-900">
-                        fora do despacho
+        <Card key={i}>
+          <CardHeader className="border-b">
+            <CardTitle className="text-base">
+              {TIPO_LABEL[r.tipo] ?? r.tipo}
+              <span className="ml-2 font-sans text-sm font-normal text-muted-foreground">
+                · {PARTE_LABEL[r.parte] ?? r.parte}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-6">
+            {(r.temas || []).map((t, j) => {
+              const refs =
+                t.blueprint_temas ?? (t.blueprint_tema ? [t.blueprint_tema] : []);
+              const status = t.transcricao_rr_status;
+              const isRR = r.tipo === "recurso_revista";
+              return (
+                <section
+                  key={j}
+                  className="space-y-3 rounded-lg border bg-muted/20 p-4"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="font-serif text-sm font-semibold uppercase tracking-wide">
+                      {t.nome}
+                    </h4>
+                    {refs.length === 0 && (
+                      <Badge variant="warning">fora do despacho</Badge>
+                    )}
+                    {refs.length > 1 && (
+                      <Badge variant="secondary">
+                        agrupa {refs.length} temas
+                      </Badge>
+                    )}
+                    {isRR && status === "ok" && (
+                      <Badge variant="success" className="gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Transcrição OK
+                      </Badge>
+                    )}
+                  </div>
+
+                  {isRR &&
+                    (status === "ausente" || status === "parcial") &&
+                    t.transcricao_rr_alerta && (
+                      <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-destructive">
+                            Risco de admissibilidade — art. 896, § 1º-A, I, CLT
+                          </p>
+                          <p className="text-xs text-destructive/90">
+                            {t.transcricao_rr_alerta}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                  <ListBlock
+                    label="Fundamentos argumentativos"
+                    items={t.fundamentos_argumentativos}
+                  />
+                  <ListBlock
+                    label="Permissivos invocados"
+                    items={t.permissivos_invocados}
+                  />
+                  <ListBlock label="Óbices aplicáveis" items={t.obices_aplicaveis} />
+                  <ListBlock
+                    label="Jurisprudência citada"
+                    items={t.jurisprudencia_citada}
+                  />
+                  {t.conclusao_sugerida && (
+                    <p className="rounded-md bg-card px-3 py-2 text-sm">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Conclusão sugerida ·{" "}
                       </span>
-                    );
-                  }
-                  if (refs.length > 1) {
-                    return (
-                      <span className="rounded bg-sky-100 px-2 py-0.5 text-[10px] font-medium text-sky-900">
-                        agrupa {refs.length} temas do despacho
-                      </span>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-              <ListBlock label="Fundamentos argumentativos" items={t.fundamentos_argumentativos} />
-              <ListBlock label="Permissivos invocados" items={t.permissivos_invocados} />
-              <ListBlock label="Óbices aplicáveis" items={t.obices_aplicaveis} />
-              <ListBlock label="Jurisprudência citada" items={t.jurisprudencia_citada} />
-              {t.conclusao_sugerida && (
-                <p className="text-sm">
-                  <span className="font-medium">Conclusão sugerida: </span>
-                  {t.conclusao_sugerida}
-                </p>
-              )}
-            </section>
-          ))}
-        </article>
+                      {t.conclusao_sugerida}
+                    </p>
+                  )}
+                </section>
+              );
+            })}
+          </CardContent>
+        </Card>
       ))}
       {obs && !hasAlignmentWarning && (
         <p className="text-xs text-muted-foreground">
-          <strong>Observações:</strong> {obs}
+          <strong className="font-medium">Observações:</strong> {obs}
         </p>
       )}
     </div>

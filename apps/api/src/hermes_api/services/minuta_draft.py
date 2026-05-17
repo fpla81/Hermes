@@ -130,6 +130,19 @@ Modelo exato:
 O MARCO LEGAL pré-calculado é: {marco_legal}
 Se vier null/vazio: OMITA o marco legal e adicione uma nota em [[ALERTA_VERMELHO]] no topo dizendo "Marco legal não definido — confirmar data do acórdão regional."
 
+# ALERTAS DE ADMISSIBILIDADE (CRÍTICOS)
+
+Para CADA tema do dossiê referente a Recurso de Revista que apresentar
+`transcricao_rr_status` igual a "ausente" ou "parcial", emita um bloco
+`[[ALERTA_VERMELHO]]` **imediatamente após o cabeçalho `TEMA - ...`**
+daquele tema, contendo a mensagem do campo `transcricao_rr_alerta` do
+dossiê (ou texto equivalente: "Possível descumprimento do art. 896,
+§ 1º-A, I, CLT — transcrever o trecho do acórdão recorrido nas razões
+do RR é requisito formal; verificar antes de conhecer o recurso. Súmula
+422, I do TST."). Quando o status for "ok" ou "nao_aplicavel", NÃO emita
+alerta. Esses alertas existem para que o ministro confira o ponto antes
+de redigir a decisão — não os omita.
+
 # LÓGICA RR × AIRR (CRÍTICA)
 
 Quando o dossiê contém AGRAVO DE INSTRUMENTO **e** RECURSO DE REVISTA DA MESMA PARTE:

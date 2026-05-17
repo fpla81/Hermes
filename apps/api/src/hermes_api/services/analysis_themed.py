@@ -57,6 +57,8 @@ FORMATO OBRIGATÓRIO:
           "fundamentos_argumentativos": ["..."],    // alegações jurídicas/factuais da parte, em texto direto SEM bullets, prontos pra colar; verbos: alega, aduz, sustenta, argumenta
           "permissivos_invocados": ["..."],         // arts/súmulas/OJs/precedentes invocados pela parte, AGRUPADOS POR DIPLOMA; ex.: "arts. 5º, II e LV, da Constituição; 832 da CLT"
           "obices_aplicaveis": ["..."],             // ex.: "Súmula 126 do TST", "art. 896, § 1º-A, da CLT"
+          "transcricao_rr_status": "ok" | "ausente" | "parcial" | "nao_aplicavel",  // Só para RR (nao_aplicavel para AIRR/Agravo Interno). Avalia se a peça do RR atende ao art. 896, § 1º-A, I, CLT — ou seja, se o recorrente transcreveu, nas suas próprias razões, o trecho do acórdão recorrido referente ao tema. NÃO confundir com `acordao_recorrido_transcricao` (que é o que VOCÊ extrai do acórdão). Aqui você confere se a PEÇA DO RECURSO contém aquela transcrição. "ok": RR transcreveu integralmente o capítulo relevante. "parcial": transcrição existe mas é fragmentária/parcial/só uma frase. "ausente": RR não transcreveu o trecho.
+          "transcricao_rr_alerta": "..." | null,    // se status != "ok" e != "nao_aplicavel": 1 frase explicando o risco (ex.: "RR apenas parafraseia o acórdão sem transcrever literal; risco de não conhecimento pelo art. 896, § 1º-A, I, CLT e Súmula 422, I do TST"). null caso contrário.
           "jurisprudencia_citada": ["..."],         // precedentes vinculantes do STF/TST citados PELA PARTE (não os de fundamentação)
           "conclusao_sugerida": "conhecer e dar provimento" | "conhecer e negar provimento" | "não conhecer" | "nego seguimento" | "dou provimento ao Agravo de Instrumento" | "prejudicado",
           "analise_juridica": "..."                  // 1-2 parágrafos antecipando a análise para colar na minuta
@@ -162,12 +164,35 @@ def _split_paragraphs(value: Any) -> list[str] | None:
 
 
 def _normalize_transcricoes(dossie: dict[str, Any]) -> dict[str, Any]:
-    """Garante que campos de transcrição sejam listas de parágrafos."""
+    """Garante que campos de transcrição sejam listas de parágrafos e
+    que o status de conformidade do art. 896, §1º-A, I, CLT esteja válido."""
+    valid_status = {"ok", "ausente", "parcial", "nao_aplicavel"}
     for recurso in dossie.get("recursos") or []:
+        tipo = str(recurso.get("tipo", ""))
         for tema in recurso.get("temas") or []:
             for field in ("acordao_recorrido_transcricao", "embargos_transcricao"):
                 normalized = _split_paragraphs(tema.get(field))
                 tema[field] = normalized
+            # normaliza checagem de transcrição do RR
+            status = str(tema.get("transcricao_rr_status", "")).strip().lower()
+            if tipo != "recurso_revista":
+                tema["transcricao_rr_status"] = "nao_aplicavel"
+                tema["transcricao_rr_alerta"] = None
+            else:
+                if status not in valid_status:
+                    status = "ausente"
+                tema["transcricao_rr_status"] = status
+                alerta = tema.get("transcricao_rr_alerta")
+                if status in ("ok", "nao_aplicavel"):
+                    tema["transcricao_rr_alerta"] = None
+                else:
+                    tema["transcricao_rr_alerta"] = (
+                        str(alerta).strip() if alerta else
+                        "Possível ausência ou insuficiência de transcrição do "
+                        "trecho do acórdão recorrido nas razões do Recurso de "
+                        "Revista — risco de não conhecimento (art. 896, § 1º-A, "
+                        "I, CLT; Súmula 422, I do TST)."
+                    )
     return dossie
 
 

@@ -132,6 +132,22 @@ export function MinutaTiptap({ value, onChange }: Props) {
       .run();
   };
 
+  const setTranscricao = (n: 1 | 2 | 3) => {
+    const marker = `[[TRANSCRICAO${n}]]`;
+    if (!editor.isActive("blockquote")) {
+      editor.chain().focus().setBlockquote().run();
+    }
+    editor
+      .chain()
+      .focus()
+      .updateAttributes("blockquote", { dataMarker: marker })
+      .run();
+  };
+
+  const isTranscricao = (n: 1 | 2 | 3) =>
+    editor.isActive("blockquote") &&
+    editor.getAttributes("blockquote").dataMarker === `[[TRANSCRICAO${n}]]`;
+
   const setHeading = () => {
     if (editor.isActive("heading", { level: 3 })) {
       editor.chain().focus().setParagraph().run();
@@ -165,11 +181,27 @@ export function MinutaTiptap({ value, onChange }: Props) {
         </button>
         <button
           type="button"
-          className={`${btnBase} ${editor.isActive("blockquote") ? btnActive : ""}`}
-          onClick={() => setStyle("transcricao")}
-          title="Transcrição com recuo (formato TST)"
+          className={`${btnBase} ${isTranscricao(1) ? btnActive : ""}`}
+          onClick={() => setTranscricao(1)}
+          title="Transcrição nível 1 — trecho do acórdão recorrido"
         >
-          Transcrição
+          Transcrição 1
+        </button>
+        <button
+          type="button"
+          className={`${btnBase} ${isTranscricao(2) ? btnActive : ""}`}
+          onClick={() => setTranscricao(2)}
+          title="Transcrição nível 2 — embargos de declaração"
+        >
+          Transcrição 2
+        </button>
+        <button
+          type="button"
+          className={`${btnBase} ${isTranscricao(3) ? btnActive : ""}`}
+          onClick={() => setTranscricao(3)}
+          title="Transcrição nível 3 — outros trechos citados"
+        >
+          Transcrição 3
         </button>
         <button
           type="button"
