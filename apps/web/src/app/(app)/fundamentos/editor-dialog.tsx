@@ -54,8 +54,8 @@ export function FundamentoEditorDialog({ open, onClose, fundamento }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col gap-0 p-0">
+        <DialogHeader className="border-b p-6 pb-4">
           <DialogTitle>Editar fundamentação</DialogTitle>
           <DialogDescription>
             Ajuste tema, título, tags e corpo. As alterações entram em vigor
@@ -63,9 +63,13 @@ export function FundamentoEditorDialog({ open, onClose, fundamento }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <form action={formAction} className="space-y-5">
+        <form
+          action={formAction}
+          className="flex min-h-0 flex-1 flex-col"
+        >
           <input type="hidden" name="id" value={fundamento.id} />
           <input type="hidden" name="corpo_md" value={corpo} />
+          <div className="flex-1 space-y-5 overflow-y-auto p-6">
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -145,8 +149,9 @@ export function FundamentoEditorDialog({ open, onClose, fundamento }: Props) {
               />
             </div>
           </div>
+          </div>
 
-          <DialogFooter className="items-center">
+          <DialogFooter className="items-center border-t bg-card/50 px-6 py-4">
             {state.ok && (
               <span className="mr-auto text-xs text-success">Salvo com sucesso.</span>
             )}

@@ -184,7 +184,7 @@ export function MinutaEditor({
           <MinutaTiptap value={text} onChange={setText} />
         )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             type="submit"
             disabled={savePending || !text.trim()}
@@ -192,6 +192,23 @@ export function MinutaEditor({
           >
             {savePending ? "Salvando…" : "Salvar minuta"}
           </Button>
+          {canLearn && (
+            <Button
+              type="button"
+              size="lg"
+              variant="success"
+              onClick={handleLearn}
+              disabled={!hasMinuta || extracting}
+              title={
+                hasMinuta
+                  ? "Extrai as fundamentações da minuta para você revisar e escolher quais salvar"
+                  : "Salve a minuta primeiro"
+              }
+            >
+              <GraduationCap className="h-4 w-4" />
+              {extracting ? "Extraindo…" : "Aprender fundamentação"}
+            </Button>
+          )}
           {saveState.ok && (
             <span className="text-xs text-success">Salvo com sucesso.</span>
           )}
