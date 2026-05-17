@@ -6,6 +6,7 @@ from hermes_api.services.docx import STYLE_MARKERS
 from hermes_api.services.minuta_draft import (
     PROMPT_TEMPLATE,
     VALID_MARKERS,
+    _normalize_markers,
     _validate_minuta_structure,
     build_minuta_draft,
     compute_marco_legal,
@@ -218,3 +219,24 @@ def test_build_minuta_warns_on_bad_output(monkeypatch) -> None:
 def test_valid_markers_match_style_markers() -> None:
     """A lista interna deve refletir exatamente o STYLE_MARKERS de docx.py."""
     assert set(VALID_MARKERS) == set(STYLE_MARKERS.keys())
+
+
+def test_normalize_markers_fixes_common_typos() -> None:
+    assert _normalize_markers("[[TRANSCRICA1]]") == "[[TRANSCRICAO1]]"
+    assert _normalize_markers("[[TRANSCRICA2]]") == "[[TRANSCRICAO2]]"
+    assert _normalize_markers("[[TRANSCRICA3]]") == "[[TRANSCRICAO3]]"
+    assert _normalize_markers("[[TRANSCRIÇÃO1]]") == "[[TRANSCRICAO1]]"
+    assert _normalize_markers("[[ALERTAVERMELHO]]") == "[[ALERTA_VERMELHO]]"
+    assert _normalize_markers("[[ALERTA VERMELHO]]") == "[[ALERTA_VERMELHO]]"
+    # marcadores válidos passam intactos
+    assert _normalize_markers("[[CORPO]]") == "[[CORPO]]"
+    assert _normalize_markers("[[TRANSCRICAO1]]") == "[[TRANSCRICAO1]]"
+
+
+def test_normalize_then_validate_is_clean() -> None:
+    """O typo TRANSCRICA1 deve sumir após normalização → validador ok."""
+    text = "[[CORPO]]\nTEMA - X\n[[TRANSCRICA1]]\nfoo\n[[CORPO]]\nDISPOSITIVO."
+    normalized = _normalize_markers(text)
+    problems = _validate_minuta_structure(normalized)
+    # não pode mais ter aviso de marcador desconhecido
+    assert all("marcador desconhecido" not in p for p in problems)

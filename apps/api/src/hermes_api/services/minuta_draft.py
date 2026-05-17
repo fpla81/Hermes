@@ -70,6 +70,11 @@ A minuta DEVE usar apenas estes marcadores, sempre em linha própria, ANTES de c
 
 NÃO use texto fora de blocos com marcador.
 
+**ORTOGRAFIA EXATA DOS MARCADORES (regra rígida)**: emita o nome EXATAMENTE
+como acima. Nunca escreva `[[TRANSCRICA1]]` (sem o "O"), nem
+`[[TRANSCRIÇÃO1]]` (com cedilha/til), nem `[[ALERTAVERMELHO]]` (sem
+underscore). Cada erro de um caractere quebra o renderizador.
+
 # ESTRUTURA CANÔNICA
 
 Para cada recurso analisado no dossiê, produza:
@@ -471,6 +476,31 @@ def _stub_minuta(numero: str, pieces: list[dict[str, Any]]) -> str:
     return "\n".join(chunks)
 
 
+def _normalize_markers(text: str) -> str:
+    """Corrige variações comuns que o LLM produz nos marcadores.
+
+    Mais comum: TRANSCRICA1/2/3 (perde o "O"), TRANSCRIÇÃO1 (com
+    diacrítico), ALERTAVERMELHO (sem underscore), CORPO. com ponto, etc.
+    """
+    import re
+
+    fixes: list[tuple[str, str]] = [
+        # TRANSCRICA{1,2,3} sem "O"
+        (r"\[\[TRANSCRICA([123])\]\]", r"[[TRANSCRICAO\1]]"),
+        # TRANSCRIÇÃO com diacrítico
+        (r"\[\[TRANSCRI[ÇC][AÃ]O([123])\]\]", r"[[TRANSCRICAO\1]]"),
+        # TRANSCRICAO sem número → assume 1
+        (r"\[\[TRANSCRICAO\]\]", "[[TRANSCRICAO1]]"),
+        # ALERTAVERMELHO sem underscore
+        (r"\[\[ALERTAVERMELHO\]\]", "[[ALERTA_VERMELHO]]"),
+        # ALERTA VERMELHO com espaço
+        (r"\[\[ALERTA VERMELHO\]\]", "[[ALERTA_VERMELHO]]"),
+    ]
+    for pattern, repl in fixes:
+        text = re.sub(pattern, repl, text)
+    return text
+
+
 def _validate_minuta_structure(text: str) -> list[str]:
     """Devolve lista de problemas estruturais. Vazia = ok."""
     problems: list[str] = []
@@ -541,6 +571,7 @@ def build_minuta_draft(
     except Exception as exc:  # noqa: BLE001
         return f"[[CORPO]]\nTODO: falha ao gerar minuta ({exc}).\n"
 
+    raw = _normalize_markers(raw)
     problems = _validate_minuta_structure(raw)
     if problems:
         warning = (
