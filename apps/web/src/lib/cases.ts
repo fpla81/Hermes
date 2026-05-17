@@ -12,6 +12,16 @@ export type CaseStatus =
   | "done"
   | "error";
 
+export interface RepetitivoMatch {
+  numero: number;
+  descricao: string;
+  situacao: string;
+  tese: string | null;
+  confidence: number;
+  kind: "alta" | "media";
+  justificativa: string | null;
+}
+
 export interface AnalysisTema {
   nome: string;
   blueprint_temas?: string[];
@@ -24,6 +34,7 @@ export interface AnalysisTema {
   conclusao_sugerida: string;
   transcricao_rr_status?: "ok" | "ausente" | "parcial" | "nao_aplicavel";
   transcricao_rr_alerta?: string | null;
+  repetitivos_matches?: RepetitivoMatch[];
 }
 
 export interface AnalysisRecurso {

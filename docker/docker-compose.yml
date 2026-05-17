@@ -130,6 +130,30 @@ services:
       - ../apps/worker:/app/apps/worker
       - ../apps/api:/app/apps/api
 
+  beat:
+    build:
+      context: ..
+      dockerfile: apps/worker/Dockerfile
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://hermes:hermes@postgres:5432/hermes
+      DATABASE_URL_SYNC: postgresql://hermes:hermes@postgres:5432/hermes
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      S3_ENDPOINT: http://minio:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - ../apps/worker:/app/apps/worker
+      - ../apps/api:/app/apps/api
+    command: ["uv", "run", "celery", "-A", "hermes_worker.celery_app", "beat", "--loglevel=info"]
+
   # Serviço playwright legado — não sobe por padrão. O fluxo atual usa o
   # bookmarklet em /settings (sem captura controlada pelo servidor).
   # Para reativar: `docker compose --profile legacy up playwright`.

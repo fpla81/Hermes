@@ -47,6 +47,7 @@ def compute_marco_legal(acordao_regional_data: str | None) -> str | None:
 VALID_MARKERS = (
     "[[CORPO]]",
     "[[ALERTA_VERMELHO]]",
+    "[[ALERTA_VERDE]]",
     "[[EMENTA]]",
     "[[TRANSCRICAO1]]",
     "[[TRANSCRICAO2]]",
@@ -67,6 +68,7 @@ A minuta DEVE usar apenas estes marcadores, sempre em linha própria, ANTES de c
 - `[[EMENTA]]` — ementa de julgado citado como precedente.
 - `[[NOTA]]` — nota de rodapé.
 - `[[ALERTA_VERMELHO]]` — aviso interno em vermelho (usar só se houver problema impeditivo).
+- `[[ALERTA_VERDE]]` — informação processual destacada em verde (aderência a tema de Recursos de Revista Repetitivos do TST).
 
 NÃO use texto fora de blocos com marcador.
 
@@ -147,6 +149,30 @@ do RR é requisito formal; verificar antes de conhecer o recurso. Súmula
 422, I do TST."). Quando o status for "ok" ou "nao_aplicavel", NÃO emita
 alerta. Esses alertas existem para que o ministro confira o ponto antes
 de redigir a decisão — não os omita.
+
+# TEMAS REPETITIVOS DO TST (alerta verde)
+
+Para CADA tema do dossiê que apresentar o campo ``repetitivos_matches``
+preenchido (lista não vazia), emita UM bloco ``[[ALERTA_VERDE]]`` por
+match, **logo após o cabeçalho `TEMA - ...`** (ou após o
+``[[ALERTA_VERMELHO]]`` de admissibilidade, quando houver). Para cada
+match, use o formato:
+
+  Linha 1: ``Tema {numero} do TST — {descricao}``.
+  Linha 2: ``Situação: {suspensa|decidida}.`` (use feminino — "suspensa"
+  ou "decidida"; mapeie do campo ``situacao`` do match: "suspenso" →
+  "suspensa"; "decidido" → "decidida"; "julgado" → "decidida"; "outro"
+  → "em acompanhamento").
+  Linha 3 (apenas quando ``tese`` não for vazia): ``Tese firmada:
+  {tese}.``
+
+Quando ``kind == "media"``, prefixe o bloco com:
+``Possível aderência (confirmar manualmente): `` antes de "Tema {numero}".
+
+Quando ``kind == "alta"``, sem prefixo — escreva direto "Tema X do TST…".
+
+Se o tema não tem ``repetitivos_matches`` ou a lista está vazia, NÃO
+emita alerta verde.
 
 # LÓGICA RR × AIRR (CRÍTICA)
 

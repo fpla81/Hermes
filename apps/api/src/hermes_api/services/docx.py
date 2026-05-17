@@ -20,9 +20,11 @@ from docx.shared import Cm, Pt, RGBColor
 
 FONT_NAME = "Open Sans"
 REPETITIVE_THEME_RED = RGBColor(255, 0, 0)
+ALERTA_VERDE_TEXT = RGBColor(0x1B, 0x5E, 0x20)  # verde-escuro
 STYLE_MARKERS = {
     "[[CORPO]]": "Corpo",
     "[[ALERTA_VERMELHO]]": "Alerta Vermelho",
+    "[[ALERTA_VERDE]]": "Alerta Verde",
     "[[EMENTA]]": "Ementa",
     "[[TRANSCRICAO1]]": "Transcrição 1",
     "[[TRANSCRICAO2]]": "Transcrição 2",
@@ -137,6 +139,19 @@ def _set_doc_defaults(document: Document) -> None:
     alert.paragraph_format.space_before = Pt(0)
     alert.paragraph_format.space_after = Pt(0)
     alert.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    green = styles.add_style("Alerta Verde", 1)
+    _set_style_font(green, 12, bold=True)
+    # Verde-escuro pra contrastar bem em fundo branco e ficar legível
+    # mesmo na impressão.
+    for run in (green.font,):
+        run.color.rgb = ALERTA_VERDE_TEXT
+    green.paragraph_format.first_line_indent = Cm(4.5)
+    green.paragraph_format.line_spacing_rule = WD_LINE_SPACING.EXACTLY
+    green.paragraph_format.line_spacing = Pt(18)
+    green.paragraph_format.space_before = Pt(0)
+    green.paragraph_format.space_after = Pt(0)
+    green.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     heading = styles.add_style("Corpo Título", 1)
     _set_style_font(heading, 12, bold=True)
@@ -346,10 +361,17 @@ def _add_paragraph(document: Document, text: str, current_style: str, color: RGB
     paragraph = document.add_paragraph(style=style_name)
     if heading:
         text = _normalize_theme_heading(text)
-    effective_color = color or (REPETITIVE_THEME_RED if current_style == "Alerta Vermelho" else None)
+    effective_color = color
+    if effective_color is None:
+        if current_style == "Alerta Vermelho":
+            effective_color = REPETITIVE_THEME_RED
+        elif current_style == "Alerta Verde":
+            effective_color = ALERTA_VERDE_TEXT
     return _add_markdown_runs(
         paragraph, text,
-        default_bold=heading or current_style == "Alerta Vermelho",
+        default_bold=heading
+        or current_style == "Alerta Vermelho"
+        or current_style == "Alerta Verde",
         size_pt=_style_size(style_name),
         color=effective_color,
     )

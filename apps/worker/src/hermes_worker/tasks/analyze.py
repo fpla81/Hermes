@@ -96,10 +96,20 @@ def analyze_case(self, case_id: str) -> dict[str, str]:  # noqa: ARG001
                     pa = anonymize_with_parties(str(p.get("text", "")), parties)
                     combined_map.update(pa.mapping)
                     anon_pieces.append({**p, "text": pa.text})
-                case.analysis_dossie = build_dossie(
+                dossie = build_dossie(
                     anon_pieces,
                     case.despacho_blueprint,
                 )
+                # Match contra tabela TST de Repetitivos (best-effort).
+                try:
+                    from hermes_api.services.repetitivos_match import (
+                        attach_matches_to_dossie,
+                    )
+
+                    dossie = attach_matches_to_dossie(session, dossie)
+                except Exception:  # noqa: BLE001
+                    pass
+                case.analysis_dossie = dossie
                 case.anonymization_map = combined_map
                 case.analysis_result = None
             else:

@@ -113,6 +113,44 @@ export function DossiePanel({ dossie }: { dossie: AnalysisDossie }) {
                       </div>
                     )}
 
+                  {(t.repetitivos_matches ?? []).map((m) => (
+                    <div
+                      key={m.numero}
+                      className={
+                        m.kind === "alta"
+                          ? "flex items-start gap-2 rounded-md border border-success/40 bg-success/10 p-3"
+                          : "flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 p-3"
+                      }
+                    >
+                      <CheckCircle2
+                        className={
+                          m.kind === "alta"
+                            ? "mt-0.5 h-4 w-4 shrink-0 text-success"
+                            : "mt-0.5 h-4 w-4 shrink-0 text-warning"
+                        }
+                      />
+                      <div className="space-y-1">
+                        <p
+                          className={
+                            m.kind === "alta"
+                              ? "text-xs font-semibold text-success"
+                              : "text-xs font-semibold text-warning"
+                          }
+                        >
+                          {m.kind === "media" && "Possível aderência · "}
+                          Tema {m.numero} do TST · {m.situacao === "suspenso" ? "suspenso" : m.situacao === "decidido" ? "decidido" : m.situacao}
+                        </p>
+                        <p className="text-xs text-foreground/85">{m.descricao}</p>
+                        {m.tese && (
+                          <p className="text-xs italic text-foreground/70">
+                            <strong className="font-medium">Tese firmada:</strong>{" "}
+                            {m.tese}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
                   <ListBlock
                     label="Fundamentos argumentativos"
                     items={t.fundamentos_argumentativos}
