@@ -49,6 +49,18 @@ class Settings(BaseSettings):
     gemini_max_retries: int = Field(
         default=2, validation_alias="GEMINI_MAX_RETRIES"
     )
+    llm_response_cache_enabled: bool = Field(
+        default=True, validation_alias="LLM_RESPONSE_CACHE_ENABLED"
+    )
+    llm_response_cache_ttl: int = Field(
+        default=604800, validation_alias="LLM_RESPONSE_CACHE_TTL"
+    )
+    gemini_context_cache_enabled: bool = Field(
+        default=True, validation_alias="GEMINI_CONTEXT_CACHE_ENABLED"
+    )
+    gemini_context_cache_ttl: int = Field(
+        default=3600, validation_alias="GEMINI_CONTEXT_CACHE_TTL"
+    )
     internal_secret: str | None = Field(
         default=None, validation_alias="HERMES_INTERNAL_SECRET"
     )

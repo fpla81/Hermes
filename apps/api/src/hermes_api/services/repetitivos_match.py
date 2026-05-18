@@ -34,19 +34,12 @@ STAGE1_MIN_CONFIDENCE = 0.6
 # informativa (não-bloqueante a partir deste ponto).
 STAGE2_MIN_CONFIDENCE = 0.7
 
-_STAGE1_PROMPT = """Você é um assistente jurídico do TST. Analise se o tema
-abaixo, extraído da análise de um caso concreto, tem aderência a algum
-dos temas da tabela oficial de Recursos de Revista Repetitivos do TST.
-
-TEMA DO CASO:
-- nome: {nome}
-- fundamentos argumentativos: {fundamentos}
-- permissivos invocados: {permissivos}
-
-TABELA DE REPETITIVOS (uma linha por tema, formato `Tema NNN [situacao]
-descrição curta`):
-
-{tabela}
+# Prefixo ESTÁTICO do stage 1 — instruções fixas + tabela. Este bloco é
+# o alvo do Gemini Context Cache (~50KB de tabela). Importante: NADA
+# variável por request aqui (qualquer mudança invalida o cache).
+_STAGE1_STATIC = """Você é um assistente jurídico do TST. Sua tarefa: para
+um tema extraído da análise de um caso concreto, identificar aderência a
+algum tema da tabela oficial de Recursos de Revista Repetitivos do TST.
 
 CRITÉRIOS DE ADERÊNCIA (regra rígida — todos devem ser satisfeitos):
 
@@ -74,6 +67,19 @@ EXEMPLOS NEGATIVOS (estes NÃO são aderência — não inclua):
 DIRETRIZ DE CALIBRAÇÃO: **prefira FALSO NEGATIVO a FALSO POSITIVO.** Em
 dúvida razoável, NÃO inclua. Vai existir uma segunda etapa de verificação
 crítica; aqui você está fazendo triagem.
+
+TABELA DE REPETITIVOS (uma linha por tema, formato `Tema NNN [situacao]
+descrição curta`):
+
+{tabela}
+"""
+
+
+# Sufixo DINÂMICO do stage 1 — varia por request. Não cacheável.
+_STAGE1_DYNAMIC = """TEMA DO CASO:
+- nome: {nome}
+- fundamentos argumentativos: {fundamentos}
+- permissivos invocados: {permissivos}
 
 Responda APENAS com JSON puro, sem ``` e sem texto adicional:
 
@@ -196,14 +202,17 @@ def _stage1_triagem(
     permissivos = " | ".join(tema.get("permissivos_invocados") or [])[:1500]
     nome = str(tema.get("nome", "")).strip() or "(sem nome)"
 
-    prompt = (
-        _STAGE1_PROMPT.replace("{nome}", nome)
+    static_prefix = _STAGE1_STATIC.replace("{tabela}", tabela_formatted)
+    dynamic = (
+        _STAGE1_DYNAMIC.replace("{nome}", nome)
         .replace("{fundamentos}", fundamentos or "(nenhum)")
         .replace("{permissivos}", permissivos or "(nenhum)")
-        .replace("{tabela}", tabela_formatted)
     )
     try:
-        raw = provider.analyze(prompt)
+        if hasattr(provider, "analyze_cached"):
+            raw = provider.analyze_cached(static_prefix, dynamic)
+        else:
+            raw = provider.analyze(static_prefix + "\n\n" + dynamic)
     except Exception as exc:  # noqa: BLE001
         log.warning("repetitivos_match stage1 LLM falhou: %s", exc)
         return []
