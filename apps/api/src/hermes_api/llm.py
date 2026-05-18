@@ -12,7 +12,12 @@ Caching:
 - **Gemini Context Cache**: ``analyze_cached(static_prefix, dynamic)``
   cria (ou reusa) um ``cachedContents`` na API do Gemini com o prefixo
   estático. Tokens cacheados custam ~25% do normal. Útil para prompts
-  com bloco fixo grande (tabela de Repetitivos).
+  com bloco fixo grande (tabela de Repetitivos, instruções de
+  ``analysis_themed``).
+
+Observabilidade: cada chamada bem-sucedida loga ``llm_usage`` (nível
+INFO) com ``label`` do call site + tokens (prompt/cached/output). Use
+``label`` único por service pra agregação em ferramentas externas.
 
 Nenhum payload PII deve chegar aqui: o caller é responsável por aplicar
 ``hermes_api.anonymizer`` antes.
@@ -32,20 +37,41 @@ from .config import get_settings
 log = logging.getLogger(__name__)
 
 
+def json_generation_config(max_output_tokens: int | None = None) -> dict[str, Any]:
+    """Atalho pra configs comuns: força JSON puro + cap de output tokens."""
+    cfg: dict[str, Any] = {"responseMimeType": "application/json"}
+    if max_output_tokens is not None:
+        cfg["maxOutputTokens"] = int(max_output_tokens)
+    return cfg
+
+
 class LLMProvider(Protocol):
     def analyze(self, anonymized_text: str) -> str: ...
 
 
 class StubProvider:
-    def analyze(self, anonymized_text: str) -> str:
+    def analyze(
+        self,
+        anonymized_text: str,
+        *,
+        label: str | None = None,
+        generation_config: dict[str, Any] | None = None,
+    ) -> str:
         return (
             "## Análise (stub)\n\n"
             "Configure GEMINI_API_KEY para gerar a análise real.\n\n"
             f"Tamanho do texto anonimizado: {len(anonymized_text)} caracteres."
         )
 
-    def analyze_cached(self, static_prefix: str, dynamic: str) -> str:
-        return self.analyze(static_prefix + "\n\n" + dynamic)
+    def analyze_cached(
+        self,
+        static_prefix: str,
+        dynamic: str,
+        *,
+        label: str | None = None,
+        generation_config: dict[str, Any] | None = None,
+    ) -> str:
+        return self.analyze(static_prefix + "\n\n" + dynamic, label=label)
 
 
 class GeminiProvider:
@@ -79,21 +105,36 @@ class GeminiProvider:
     # ------------------------------------------------------------------
     # Public entry points
     # ------------------------------------------------------------------
-    def analyze(self, anonymized_text: str) -> str:
+    def analyze(
+        self,
+        anonymized_text: str,
+        *,
+        label: str | None = None,
+        generation_config: dict[str, Any] | None = None,
+    ) -> str:
         cached = cache.response_get(self.model, anonymized_text)
         if cached is not None:
-            log.debug("llm: response cache hit (len=%d)", len(cached))
+            self._log_cache_hit(label, len(cached))
             return cached
-        payload = {
+        payload: dict[str, Any] = {
             "contents": [
                 {"role": "user", "parts": [{"text": anonymized_text}]},
             ],
         }
-        out = self._post_generate(payload)
+        if generation_config:
+            payload["generationConfig"] = generation_config
+        out = self._post_generate(payload, label=label)
         cache.response_set(self.model, anonymized_text, out)
         return out
 
-    def analyze_cached(self, static_prefix: str, dynamic: str) -> str:
+    def analyze_cached(
+        self,
+        static_prefix: str,
+        dynamic: str,
+        *,
+        label: str | None = None,
+        generation_config: dict[str, Any] | None = None,
+    ) -> str:
         """Versão com Gemini Context Caching aplicado ao ``static_prefix``.
 
         ``static_prefix`` deve ser conteúdo grande e estável (ex.: tabela
@@ -104,11 +145,11 @@ class GeminiProvider:
         full_prompt = static_prefix + "\n\n" + dynamic
         cached = cache.response_get(self.model, full_prompt)
         if cached is not None:
-            log.debug("llm: response cache hit (cached path, len=%d)", len(cached))
+            self._log_cache_hit(label, len(cached))
             return cached
 
         if not settings.gemini_context_cache_enabled:
-            return self.analyze(full_prompt)
+            return self.analyze(full_prompt, label=label, generation_config=generation_config)
 
         cache_name = self._get_or_create_context_cache(
             static_prefix, settings.gemini_context_cache_ttl
@@ -116,16 +157,18 @@ class GeminiProvider:
         if not cache_name:
             # Falha ao criar context cache (ex.: prefix abaixo do mínimo
             # de tokens). Cai pra modo normal.
-            return self.analyze(full_prompt)
+            return self.analyze(full_prompt, label=label, generation_config=generation_config)
 
-        payload = {
+        payload: dict[str, Any] = {
             "contents": [
                 {"role": "user", "parts": [{"text": dynamic}]},
             ],
             "cachedContent": cache_name,
         }
+        if generation_config:
+            payload["generationConfig"] = generation_config
         try:
-            out = self._post_generate(payload)
+            out = self._post_generate(payload, label=label)
         except httpx.HTTPStatusError as exc:
             # 4xx (cache expirado/inválido): dropa o nome e tenta sem cache.
             if 400 <= exc.response.status_code < 500:
@@ -134,7 +177,9 @@ class GeminiProvider:
                     exc.response.status_code,
                 )
                 cache.context_cache_name_drop(self.model, static_prefix)
-                out = self.analyze(full_prompt)
+                out = self.analyze(
+                    full_prompt, label=label, generation_config=generation_config
+                )
             else:
                 raise
         cache.response_set(self.model, full_prompt, out)
@@ -143,7 +188,9 @@ class GeminiProvider:
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
-    def _post_generate(self, payload: dict[str, Any]) -> str:
+    def _post_generate(
+        self, payload: dict[str, Any], *, label: str | None = None
+    ) -> str:
         url = f"{self.BASE_URL}/models/{self.model}:generateContent"
         last_exc: Exception | None = None
         for attempt in range(self.max_retries + 1):
@@ -156,6 +203,7 @@ class GeminiProvider:
                 )
                 r.raise_for_status()
                 data = r.json()
+                self._log_usage(label, data.get("usageMetadata") or {})
                 candidates = data.get("candidates") or []
                 if not candidates:
                     return ""
@@ -216,6 +264,29 @@ class GeminiProvider:
         cache.context_cache_name_set(self.model, static_prefix, name, ttl_seconds)
         log.info("gemini context cache criado: %s (ttl=%ds)", name, ttl_seconds)
         return name
+
+    def _log_usage(self, label: str | None, usage: dict[str, Any]) -> None:
+        prompt_tokens = int(usage.get("promptTokenCount") or 0)
+        cached_tokens = int(usage.get("cachedContentTokenCount") or 0)
+        output_tokens = int(usage.get("candidatesTokenCount") or 0)
+        total = int(usage.get("totalTokenCount") or 0) or (prompt_tokens + output_tokens)
+        log.info(
+            "llm_usage label=%s model=%s prompt=%d cached=%d output=%d total=%d",
+            label or "unknown",
+            self.model,
+            prompt_tokens,
+            cached_tokens,
+            output_tokens,
+            total,
+        )
+
+    def _log_cache_hit(self, label: str | None, response_len: int) -> None:
+        log.info(
+            "llm_usage label=%s model=%s prompt=0 cached=0 output=0 total=0 source=response_cache resp_chars=%d",
+            label or "unknown",
+            self.model,
+            response_len,
+        )
 
 
 def get_llm_provider() -> LLMProvider:

@@ -700,7 +700,7 @@ def build_minuta_draft(
         .replace("{fundamentos_block}", fundamentos_block)
     )
     try:
-        raw = provider.analyze(prompt).strip()
+        raw = provider.analyze(prompt, label="minuta_draft").strip()
     except Exception as exc:  # noqa: BLE001
         return f"[[CORPO]]\nTODO: falha ao gerar minuta ({exc}).\n"
 

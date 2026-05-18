@@ -28,7 +28,7 @@ def _stage_responses(stage1: str, stage2: str):
     calls = {"n": 0}
 
     class FakeProvider:
-        def analyze(self, prompt: str) -> str:
+        def analyze(self, prompt: str, **_kw) -> str:
             calls["n"] += 1
             return stage1 if calls["n"] == 1 else stage2
 

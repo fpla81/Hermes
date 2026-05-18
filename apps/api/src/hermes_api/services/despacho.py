@@ -16,9 +16,10 @@ import json
 import re
 from typing import Any
 
-from ..llm import StubProvider, get_llm_provider
+from ..llm import StubProvider, get_llm_provider, json_generation_config
 
-PROMPT_TEMPLATE = """Você é um analista jurídico do TST. Leia o despacho de admissibilidade do TRT abaixo e extraia, em JSON puro (sem ```), a lista de recursos analisados.
+# Bloco ESTÁTICO (instruções + schema) — alvo do Gemini Context Cache.
+_STATIC_PROMPT = """Você é um analista jurídico do TST. Leia o despacho de admissibilidade do TRT (fornecido abaixo) e extraia, em JSON puro (sem ```), a lista de recursos analisados.
 
 Para cada recurso, devolva:
 - tipo: "recurso_revista" | "agravo_instrumento" | "agravo_interno" | "outro"
@@ -47,7 +48,11 @@ Formato exato da resposta (apenas JSON, sem texto adicional):
   "acordao_regional_data": "dd/mm/aaaa" | null
 }
 
-Despacho:
+"""
+
+
+# Bloco DINÂMICO (varia por request).
+_DYNAMIC_PROMPT = """Despacho:
 ---
 {text}
 ---
@@ -92,9 +97,22 @@ def parse_despacho(text: str) -> dict[str, Any]:
             "recursos": [],
             "note": "GEMINI_API_KEY ausente — adicione a chave para extrair o blueprint automaticamente.",
         }
+    dynamic = _DYNAMIC_PROMPT.replace("{text}", text)
+    gen_cfg = json_generation_config(max_output_tokens=4000)
     try:
-        prompt = PROMPT_TEMPLATE.replace("{text}", text)
-        response = provider.analyze(prompt)
+        if hasattr(provider, "analyze_cached"):
+            response = provider.analyze_cached(
+                _STATIC_PROMPT,
+                dynamic,
+                label="despacho",
+                generation_config=gen_cfg,
+            )
+        else:
+            response = provider.analyze(
+                _STATIC_PROMPT + "\n\n" + dynamic,
+                label="despacho",
+                generation_config=gen_cfg,
+            )
     except Exception as exc:  # noqa: BLE001
         return {"recursos": [], "note": f"falha ao chamar LLM: {exc}"}
     parsed = _extract_json(response)

@@ -148,7 +148,7 @@ def test_extract_from_minuta_parses_llm_output(monkeypatch) -> None:
     }"""
 
     class FakeProvider:
-        def analyze(self, text: str) -> str:
+        def analyze(self, text: str, **_kw) -> str:
             return fake
 
     case = Case(
@@ -337,7 +337,7 @@ def test_extract_parses_conclusoes(monkeypatch) -> None:
     }"""
 
     class FakeProvider:
-        def analyze(self, text: str) -> str:
+        def analyze(self, text: str, **_kw) -> str:
             return fake
 
     import uuid as _uuid

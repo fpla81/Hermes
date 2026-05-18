@@ -14,7 +14,7 @@ import json
 import re
 from typing import Any
 
-from ..llm import StubProvider, get_llm_provider
+from ..llm import StubProvider, get_llm_provider, json_generation_config
 
 TIPO_LABEL = {
     "acordao_regional": "Acórdão Regional",
@@ -89,7 +89,11 @@ REGRAS ESTRITAS:
 9. `acordao_recorrido_transcricao` e `embargos_transcricao` são ARRAYS DE STRINGS, com UM ITEM POR PARÁGRAFO do trecho fonte. PRESERVE rigorosamente as quebras de parágrafo originais. NUNCA emita um único string longo com tudo concatenado — sempre array, mesmo se for um parágrafo só (`["único parágrafo"]`). A leitura da minuta depende dessa estrutura.
 10. TRANSCRIÇÃO INTEGRAL DO CAPÍTULO (REGRA RÍGIDA): para cada tema, a transcrição NÃO pode ser um recorte editorial do trecho "mais relevante". Reproduza LITERAL e INTEGRALMENTE TODO o capítulo do acórdão regional que trata daquela matéria — do relatório das razões recursais (a delimitação do que está sendo discutido), passando pelos fundamentos (premissas fáticas, doutrina, jurisprudência invocada, raciocínio), até a parte final em que se decide a questão (dispositivo daquele capítulo). Idem para os Embargos de Declaração quando houver. Omitir parte do capítulo faz a minuta perder premissas e é um erro grave. Se o capítulo tem 30 parágrafos, devolva os 30. Se tem 3, devolva os 3. Não resuma, não interpole "(...)", não trunque.
 
-Blueprint do despacho:
+"""
+
+
+# Bloco DINÂMICO — varia por request (blueprint do caso + peças anonimizadas).
+_DYNAMIC_PROMPT = """Blueprint do despacho:
 {blueprint}
 
 Peças:
@@ -276,12 +280,25 @@ def build_dossie(
             "recursos": [],
             "observacoes": "GEMINI_API_KEY ausente — configure a chave para gerar o dossiê real.",
         }
-    prompt = (
-        PROMPT_TEMPLATE.replace("{blueprint}", _format_blueprint(blueprint))
+    dynamic = (
+        _DYNAMIC_PROMPT.replace("{blueprint}", _format_blueprint(blueprint))
         .replace("{pieces}", _format_pieces(pieces))
     )
+    gen_cfg = json_generation_config()
     try:
-        response = provider.analyze(prompt)
+        if hasattr(provider, "analyze_cached"):
+            response = provider.analyze_cached(
+                PROMPT_TEMPLATE,
+                dynamic,
+                label="analysis_themed",
+                generation_config=gen_cfg,
+            )
+        else:
+            response = provider.analyze(
+                PROMPT_TEMPLATE + "\n\n" + dynamic,
+                label="analysis_themed",
+                generation_config=gen_cfg,
+            )
     except Exception as exc:  # noqa: BLE001
         return {"recursos": [], "observacoes": f"falha LLM: {exc}"}
     parsed = _extract_json(response)

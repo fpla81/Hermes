@@ -25,7 +25,7 @@ from typing import Any
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..llm import StubProvider, get_llm_provider
+from ..llm import StubProvider, get_llm_provider, json_generation_config
 from ..models.case import Case
 from ..models.fundamento import Fundamento
 from ..schemas.fundamento import FundamentoCreate
@@ -128,7 +128,11 @@ def extract_from_minuta(case: Case) -> list[FundamentoCreate]:
         .replace("{minuta}", case.minuta_md)
     )
     try:
-        raw = provider.analyze(prompt)
+        raw = provider.analyze(
+            prompt,
+            label="fundamentos",
+            generation_config=json_generation_config(),
+        )
     except Exception:  # noqa: BLE001
         return []
     parsed = _extract_json(raw)

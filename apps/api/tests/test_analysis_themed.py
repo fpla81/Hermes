@@ -92,7 +92,7 @@ def test_parses_llm_json(monkeypatch) -> None:
     }"""
 
     class FakeProvider:
-        def analyze(self, text: str) -> str:
+        def analyze(self, text: str, **_kw) -> str:
             return fake_response
 
     with patch("hermes_api.services.analysis_themed.get_llm_provider", return_value=FakeProvider()):
@@ -112,7 +112,7 @@ def test_parses_llm_json(monkeypatch) -> None:
 
 def _fake_provider(response: str):
     class FakeProvider:
-        def analyze(self, text: str) -> str:
+        def analyze(self, text: str, **_kw) -> str:
             return response
 
     return FakeProvider()

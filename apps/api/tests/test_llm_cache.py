@@ -57,14 +57,13 @@ def settings_with_gemini(monkeypatch):
     get_settings.cache_clear()
 
 
-def _gen_response(text: str) -> Any:
+def _gen_response(text: str, usage: dict | None = None) -> Any:
     r = MagicMock()
     r.raise_for_status = MagicMock()
-    r.json = MagicMock(
-        return_value={
-            "candidates": [{"content": {"parts": [{"text": text}]}}]
-        }
-    )
+    body = {"candidates": [{"content": {"parts": [{"text": text}]}}]}
+    if usage is not None:
+        body["usageMetadata"] = usage
+    r.json = MagicMock(return_value=body)
     return r
 
 
@@ -250,3 +249,82 @@ def test_context_cache_400_on_generate_drops_name_and_retries_uncached(
     assert cache_mod.context_cache_name_get(
         "gemini-2.5-flash-lite", "STATIC"
     ) is None
+
+
+def test_generation_config_is_forwarded_in_payload(
+    monkeypatch, fake_redis, settings_with_gemini
+):
+    from hermes_api.llm import GeminiProvider, json_generation_config
+
+    prov = GeminiProvider(api_key="fake", model="gemini-2.5-flash-lite")
+    seen: list[dict] = []
+
+    def fake_post(url, **kw):
+        seen.append(kw.get("json") or {})
+        return _gen_response("ok")
+
+    monkeypatch.setattr("hermes_api.llm.httpx.post", fake_post)
+    cfg = json_generation_config(max_output_tokens=1234)
+    prov.analyze("p", label="t", generation_config=cfg)
+    assert seen[0]["generationConfig"] == {
+        "responseMimeType": "application/json",
+        "maxOutputTokens": 1234,
+    }
+
+
+def test_usage_metadata_is_logged(monkeypatch, fake_redis, settings_with_gemini, caplog):
+    import logging
+
+    from hermes_api.llm import GeminiProvider
+
+    prov = GeminiProvider(api_key="fake", model="gemini-2.5-flash-lite")
+
+    def fake_post(url, **kw):
+        return _gen_response(
+            "ok",
+            usage={
+                "promptTokenCount": 1500,
+                "cachedContentTokenCount": 1200,
+                "candidatesTokenCount": 300,
+                "totalTokenCount": 1800,
+            },
+        )
+
+    monkeypatch.setattr("hermes_api.llm.httpx.post", fake_post)
+    with caplog.at_level(logging.INFO, logger="hermes_api.llm"):
+        prov.analyze("p", label="svc-x")
+    msgs = " ".join(r.message for r in caplog.records)
+    assert "llm_usage" in msgs
+    assert "label=svc-x" in msgs
+    assert "prompt=1500" in msgs
+    assert "cached=1200" in msgs
+    assert "output=300" in msgs
+
+
+def test_response_cache_hit_logs_zero_token_usage(
+    monkeypatch, fake_redis, settings_with_gemini, caplog
+):
+    import logging
+
+    from hermes_api.llm import GeminiProvider
+
+    prov = GeminiProvider(api_key="fake", model="gemini-2.5-flash-lite")
+
+    def fake_post(url, **kw):
+        return _gen_response(
+            "RESP",
+            usage={
+                "promptTokenCount": 10,
+                "candidatesTokenCount": 2,
+                "totalTokenCount": 12,
+            },
+        )
+
+    monkeypatch.setattr("hermes_api.llm.httpx.post", fake_post)
+    prov.analyze("p", label="lbl")  # popula cache
+    caplog.clear()
+    with caplog.at_level(logging.INFO, logger="hermes_api.llm"):
+        prov.analyze("p", label="lbl")  # hit
+    msgs = " ".join(r.message for r in caplog.records)
+    assert "source=response_cache" in msgs
+    assert "label=lbl" in msgs

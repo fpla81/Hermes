@@ -37,7 +37,7 @@ def test_uses_llm_when_dossie_present(monkeypatch) -> None:
     )
 
     class FakeProvider:
-        def analyze(self, text: str) -> str:
+        def analyze(self, text: str, **_kw) -> str:
             return fake_response
 
     with patch("hermes_api.services.minuta_draft.get_llm_provider", return_value=FakeProvider()):
@@ -98,7 +98,7 @@ def test_prompt_includes_fundamentos_section(monkeypatch) -> None:
     captured = {}
 
     class FakeProvider:
-        def analyze(self, text: str) -> str:
+        def analyze(self, text: str, **_kw) -> str:
             captured["prompt"] = text
             return "[[CORPO]]\nTEMA - X\n[[CORPO]]\nDISPOSITIVO\nfim."
 
@@ -202,7 +202,7 @@ def test_build_minuta_warns_on_bad_output(monkeypatch) -> None:
     get_settings.cache_clear()
 
     class FakeProvider:
-        def analyze(self, text: str) -> str:
+        def analyze(self, text: str, **_kw) -> str:
             return "minuta sem marcadores"
 
     with patch("hermes_api.services.minuta_draft.get_llm_provider", return_value=FakeProvider()):

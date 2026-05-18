@@ -23,7 +23,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session as SyncSession
 
-from ..llm import StubProvider, get_llm_provider
+from ..llm import StubProvider, get_llm_provider, json_generation_config
 from ..models.tema_repetitivo import TemaRepetitivo
 
 log = logging.getLogger(__name__)
@@ -208,11 +208,21 @@ def _stage1_triagem(
         .replace("{fundamentos}", fundamentos or "(nenhum)")
         .replace("{permissivos}", permissivos or "(nenhum)")
     )
+    gen_cfg = json_generation_config(max_output_tokens=2000)
     try:
         if hasattr(provider, "analyze_cached"):
-            raw = provider.analyze_cached(static_prefix, dynamic)
+            raw = provider.analyze_cached(
+                static_prefix,
+                dynamic,
+                label="repetitivos_stage1",
+                generation_config=gen_cfg,
+            )
         else:
-            raw = provider.analyze(static_prefix + "\n\n" + dynamic)
+            raw = provider.analyze(
+                static_prefix + "\n\n" + dynamic,
+                label="repetitivos_stage1",
+                generation_config=gen_cfg,
+            )
     except Exception as exc:  # noqa: BLE001
         log.warning("repetitivos_match stage1 LLM falhou: %s", exc)
         return []
@@ -268,7 +278,11 @@ def _stage2_verificar(
         .replace("{candidatos_block}", candidatos_block)
     )
     try:
-        raw = provider.analyze(prompt)
+        raw = provider.analyze(
+            prompt,
+            label="repetitivos_stage2",
+            generation_config=json_generation_config(max_output_tokens=2000),
+        )
     except Exception as exc:  # noqa: BLE001
         log.warning("repetitivos_match stage2 LLM falhou: %s", exc)
         return []
