@@ -44,11 +44,40 @@ services:
       timeout: 5s
       retries: 5
 
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb -p local/hermes || true
+      "
+    restart: "no"
+
   mailhog:
     image: mailhog/mailhog:latest
     ports:
       - "1025:1025"
       - "8025:8025"
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://hermes:hermes@postgres:5432/hermes
+      DATABASE_URL_SYNC: postgresql://hermes:hermes@postgres:5432/hermes
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../apps/api:/app/apps/api
+    working_dir: /app/apps/api
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    restart: "no"
 
   api:
     build:
@@ -61,12 +90,16 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
-      CORS_ORIGINS: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3100
+      PLAYWRIGHT_SERVICE_URL: ${PLAYWRIGHT_SERVICE_URL:-http://playwright:8001}
+      S3_ENDPOINT: http://minio:9000
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "8000:8000"
     volumes:
@@ -80,26 +113,62 @@ services:
     env_file: ../.env
     environment:
       DATABASE_URL: postgresql+asyncpg://hermes:hermes@postgres:5432/hermes
+      DATABASE_URL_SYNC: postgresql://hermes:hermes@postgres:5432/hermes
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
+      PLAYWRIGHT_SERVICE_URL: ${PLAYWRIGHT_SERVICE_URL:-http://playwright:8001}
+      S3_ENDPOINT: http://minio:9000
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     volumes:
       - ../apps/worker:/app/apps/worker
       - ../apps/api:/app/apps/api
 
+  beat:
+    build:
+      context: ..
+      dockerfile: apps/worker/Dockerfile
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://hermes:hermes@postgres:5432/hermes
+      DATABASE_URL_SYNC: postgresql://hermes:hermes@postgres:5432/hermes
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      S3_ENDPOINT: http://minio:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - ../apps/worker:/app/apps/worker
+      - ../apps/api:/app/apps/api
+    command: ["uv", "run", "celery", "-A", "hermes_worker.celery_app", "beat", "--loglevel=info"]
+
+  # Serviço Playwright — renderiza páginas JS (ex.: tabela de Repetitivos
+  # do TST que vem em React). Captura de Bem-te-vi (endpoint /capture) é
+  # opcional; o fluxo principal hoje usa o bookmarklet em /settings.
   playwright:
     build:
       context: ..
       dockerfile: apps/playwright/Dockerfile
     env_file: ../.env
+    environment:
+      BEM_TE_VI_PROFILE_DIR: /app/bem_te_vi_profile
     ports:
       - "8001:8001"
     volumes:
       - ../apps/playwright:/app/apps/playwright
-      - bem_te_vi_profile:/app/bem_te_vi_profile
+      - ../bem_te_vi_profile:/app/bem_te_vi_profile
 
   web:
     build:
@@ -108,10 +177,11 @@ services:
     env_file: ../.env
     environment:
       WEB_DATABASE_URL: postgresql://hermes:hermes@postgres:5432/hermes
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3100
       SMTP_HOST: mailhog
       SMTP_PORT: "1025"
       API_BASE_URL: http://api:8000
+      HERMES_API_URL: http://api:8000
     depends_on:
       postgres:
         condition: service_healthy
@@ -120,7 +190,7 @@ services:
       api:
         condition: service_started
     ports:
-      - "3000:3000"
+      - "3100:3100"
     volumes:
       - ../apps/web:/app/apps/web
       - ../packages:/app/packages
@@ -130,7 +200,6 @@ services:
 volumes:
   pg_data:
   minio_data:
-  bem_te_vi_profile:
   api_uv_cache:
   web_node_modules:
   web_root_node_modules:

@@ -1,5 +1,4 @@
 from fastapi.testclient import TestClient
-
 from hermes_playwright.main import app
 
 

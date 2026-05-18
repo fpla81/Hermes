@@ -35,7 +35,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: [hermes-api, hermes-worker, hermes-playwright]
+        include:
+          - package: hermes-api
+            dir: apps/api
+          - package: hermes-worker
+            dir: apps/worker
+          - package: hermes-playwright
+            dir: apps/playwright
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
@@ -45,5 +51,5 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --package ${{ matrix.package }}
-      - run: uv run --package ${{ matrix.package }} ruff check .
-      - run: uv run --package ${{ matrix.package }} pytest
+      - run: uv run --package ${{ matrix.package }} ruff check ${{ matrix.dir }}
+      - run: uv run --package ${{ matrix.package }} pytest ${{ matrix.dir }}/tests

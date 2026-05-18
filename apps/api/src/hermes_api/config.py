@@ -37,6 +37,37 @@ class Settings(BaseSettings):
     )
     gemini_api_key: str | None = Field(default=None, validation_alias="GEMINI_API_KEY")
     gemini_model: str = Field(default="gemini-2.5-flash", validation_alias="GEMINI_MODEL")
+    gemini_anonymizer_model: str = Field(
+        default="gemini-2.5-flash", validation_alias="GEMINI_ANONYMIZER_MODEL"
+    )
+    gemini_read_timeout: float = Field(
+        default=600.0, validation_alias="GEMINI_READ_TIMEOUT"
+    )
+    gemini_connect_timeout: float = Field(
+        default=15.0, validation_alias="GEMINI_CONNECT_TIMEOUT"
+    )
+    gemini_max_retries: int = Field(
+        default=2, validation_alias="GEMINI_MAX_RETRIES"
+    )
+    llm_response_cache_enabled: bool = Field(
+        default=True, validation_alias="LLM_RESPONSE_CACHE_ENABLED"
+    )
+    llm_response_cache_ttl: int = Field(
+        default=604800, validation_alias="LLM_RESPONSE_CACHE_TTL"
+    )
+    gemini_context_cache_enabled: bool = Field(
+        default=True, validation_alias="GEMINI_CONTEXT_CACHE_ENABLED"
+    )
+    gemini_context_cache_ttl: int = Field(
+        default=3600, validation_alias="GEMINI_CONTEXT_CACHE_TTL"
+    )
+    internal_secret: str | None = Field(
+        default=None, validation_alias="HERMES_INTERNAL_SECRET"
+    )
+    playwright_service_url: str = Field(
+        default="http://localhost:8001",
+        validation_alias="PLAYWRIGHT_SERVICE_URL",
+    )
 
     @property
     def cors_origins_list(self) -> list[str]:

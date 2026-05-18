@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import __version__
 from .config import get_settings
-from .routes import health
+from .routes import bemtevi, cases, debug, fundamentos, health, ingest
 
 settings = get_settings()
 
@@ -16,12 +16,18 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
+    allow_origin_regex=r"^https?://([a-z0-9-]+\.)*bemtevi\.tst\.jus\.br$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(health.router)
+app.include_router(cases.router)
+app.include_router(fundamentos.router)
+app.include_router(bemtevi.router)
+app.include_router(ingest.router)
+app.include_router(debug.router)
 
 
 @app.get("/")

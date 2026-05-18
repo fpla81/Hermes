@@ -57,6 +57,58 @@ pnpm config set store-dir ~/.pnpm-store
 export UV_CACHE_DIR=~/.cache/uv
 ```
 
+## Pós-conclusão — checklist obrigatório
+
+Ao finalizar QUALQUER solicitação que altere código, apresente ao usuário
+o conjunto completo de comandos pra rodar o app em dev sem dor de cabeça.
+Não pular nenhum item, mesmo quando não estritamente necessário — é
+diagnóstico preventivo.
+
+Diretório do projeto local: `~/Code/Hermes`.
+
+```bash
+# 1. Puxar últimas mudanças
+cd ~/Code/Hermes
+git pull
+
+# 2. Liberar portas que possam ter ficado presas
+lsof -ti :3100 | xargs kill -9 2>/dev/null   # web
+lsof -ti :8000 | xargs kill -9 2>/dev/null   # api
+
+# 3. Limpar cache do Next (se mexeu em frontend ou tokens Tailwind)
+rm -rf apps/web/.next
+
+# 4. Subir Postgres/Redis/MinIO/API/worker via Docker
+docker compose -f docker/docker-compose.yml up -d
+
+# 5. Aplicar migrations novas, se houver
+docker compose -f docker/docker-compose.yml run --rm migrate
+
+# 6. Reiniciar API/worker quando o que mudou foi backend ou .env
+docker compose -f docker/docker-compose.yml restart api worker
+
+# 7. Rodar o web local com hot-reload (recomendado em dev)
+docker compose -f docker/docker-compose.yml stop web
+pnpm dev
+
+# Alternativa: rodar web também no Docker (rebuild quando deps mudaram)
+docker compose -f docker/docker-compose.yml up -d --build web
+```
+
+Indicar especificamente quais passos são necessários para a mudança em
+questão (ex.: "só backend mudou — passos 1, 2, 6 bastam"), mas SEMPRE
+listar o checklist completo pra o usuário escolher.
+
+Se a mudança envolveu:
+- Backend Python → reiniciar `api` e `worker`.
+- Migrations Alembic → rodar o serviço `migrate` antes de reiniciar a API.
+- `.env` → reiniciar containers afetados (`api`/`worker`/`web`).
+- Frontend → `rm -rf apps/web/.next` antes do reload.
+- Deps novas em `apps/web/package.json` → reinstalar (`pnpm install` ou
+  rebuild da imagem `web`).
+- Dependências Python novas em `pyproject.toml` → rebuild da imagem
+  (`docker compose ... up -d --build api worker`).
+
 ## Skill de origem (referência)
 
 Scripts Python originais em `/Users/fabioportela/.codex/skills/hermes-tst/scripts/`

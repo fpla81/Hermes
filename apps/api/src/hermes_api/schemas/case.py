@@ -1,0 +1,125 @@
+import re
+import uuid
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from ..models.case import CaseStatus
+
+PROCESSO_RE = re.compile(r"^(\d{6,7})-(\d{2})\.(\d{4})\.(\d)\.(\d{2})\.(\d{4})$")
+# usado pra extrair o número CNJ quando vem com prefixo de recurso
+# (ex.: "Ag-AIRR - 0012007-59.2016.5.03.0097")
+PROCESSO_RE_LOOSE = re.compile(r"(\d{6,7})-(\d{2})\.(\d{4})\.(\d)\.(\d{2})\.(\d{4})")
+
+
+VALID_PARTY_ROLES = {"reclamante", "reclamada", "ministerio_publico"}
+
+
+class PartyIn(BaseModel):
+    role: str = Field(..., description="reclamante | reclamada | ministerio_publico")
+    ordinal: int = Field(default=1, ge=1)
+    name: str = Field(..., min_length=1, max_length=255)
+    aliases: list[str] = Field(default_factory=list)
+
+    @field_validator("role")
+    @classmethod
+    def validar_role(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in VALID_PARTY_ROLES:
+            raise ValueError(f"role inválido; use um de {sorted(VALID_PARTY_ROLES)}")
+        return v
+
+    @field_validator("name")
+    @classmethod
+    def trim_name(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("aliases")
+    @classmethod
+    def clean_aliases(cls, v: list[str]) -> list[str]:
+        return [a.strip() for a in v if a and a.strip()]
+
+
+class CaseCreate(BaseModel):
+    numero_processo: str = Field(..., min_length=19, max_length=64)
+    titulo: str | None = Field(default=None, max_length=255)
+    parties: list[PartyIn] = Field(default_factory=list)
+
+    @field_validator("numero_processo")
+    @classmethod
+    def validar_numero(cls, v: str) -> str:
+        v = v.strip()
+        m = PROCESSO_RE.match(v)
+        if not m:
+            # tenta extrair número CNJ se vier com prefixo tipo "Ag-AIRR - ..."
+            loose = PROCESSO_RE_LOOSE.search(v)
+            if not loose:
+                raise ValueError("numero_processo deve seguir NNNNNNN-DD.AAAA.J.TR.OOOO")
+            m = loose
+        seq, dv, ano, justica, tribunal, origem = m.groups()
+        return f"{seq.zfill(7)}-{dv}.{ano}.{justica}.{tribunal}.{origem}"
+
+
+class PartiesUpdate(BaseModel):
+    parties: list[PartyIn] = Field(default_factory=list)
+
+
+class CaseRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    numero_processo: str
+    titulo: str | None
+    status: CaseStatus
+    last_error: str | None = None
+    captured_at: datetime | None = None
+    analyzed_at: datetime | None = None
+    analysis_result: str | None = None
+    analysis_dossie: dict | None = None
+    parties: list[dict] | None = None
+    minuta_md: str | None = None
+    has_manifest: bool = False
+    has_packets: bool = False
+    has_minuta: bool = False
+    has_docx: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+
+class PieceIn(BaseModel):
+    tipo: str | None = None
+    data: str | None = None
+    html_url: str | None = None
+    bin_url: str | None = None
+    id: str | None = None
+    local_path: str | None = None
+    model_config = ConfigDict(extra="allow")
+
+
+class PiecesUpload(BaseModel):
+    pieces: list[PieceIn]
+
+
+class MinutaUpload(BaseModel):
+    text: str = Field(..., min_length=1)
+
+
+class PreparedListing(BaseModel):
+    filenames: list[str]
+
+
+PieceTipo = str  # "despacho_admissibilidade" | "recurso_revista" | "agravo_instrumento" | "agravo_interno"
+PieceParte = str  # "reclamante" | "reclamada" | "reclamantes" | "reclamadas" | "ministerio_publico" | "outro"
+
+
+class StructuredPieceIn(BaseModel):
+    tipo: PieceTipo = Field(..., min_length=1)
+    parte: PieceParte | None = None
+    data: str | None = None
+    text: str = Field(..., min_length=1)
+
+
+class StructuredPiece(StructuredPieceIn):
+    id: str
+    created_at: datetime
+    blueprint: dict | None = None

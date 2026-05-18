@@ -1,5 +1,5 @@
 # Build context: repo root
-FROM mcr.microsoft.com/playwright/python:v1.49.0-noble
+FROM mcr.microsoft.com/playwright/python:v1.59.0-noble
 ENV PYTHONUNBUFFERED=1 UV_LINK_MODE=copy
 RUN pip install --no-cache-dir uv==0.11.14
 WORKDIR /app

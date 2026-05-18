@@ -1,48 +1,59 @@
 import NextAuth from "next-auth";
-import Resend from "next-auth/providers/resend";
-import Nodemailer from "next-auth/providers/nodemailer";
-import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { db } from "@/db";
-import {
-  users,
-  accounts,
-  sessions,
-  verificationTokens,
-} from "@/db/schema";
+import Credentials from "next-auth/providers/credentials";
 
-const useResend = !!process.env.AUTH_RESEND_KEY;
+import { authConfig } from "./auth.config";
+import { upsertUserAndGetRole, type UserRole } from "./roles";
+
+const SHARED_PASSWORD = process.env.HERMES_USER_PASSWORD ?? "hermes";
+
+const ALLOWED_EMAILS_RAW = process.env.HERMES_ALLOWED_EMAILS;
+const ALLOWED_EMAILS = ALLOWED_EMAILS_RAW
+  ? ALLOWED_EMAILS_RAW.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)
+  : [(process.env.HERMES_USER_EMAIL ?? "admin@hermes.local").toLowerCase()];
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: DrizzleAdapter(db, {
-    usersTable: users,
-    accountsTable: accounts,
-    sessionsTable: sessions,
-    verificationTokensTable: verificationTokens,
-  }),
-  session: { strategy: "database" },
-  pages: { signIn: "/sign-in" },
+  ...authConfig,
+  session: { strategy: "jwt" },
   providers: [
-    useResend
-      ? Resend({
-          apiKey: process.env.AUTH_RESEND_KEY!,
-          from: process.env.AUTH_EMAIL_FROM ?? "hermes@example.com",
-        })
-      : Nodemailer({
-          server: {
-            host: process.env.SMTP_HOST ?? "localhost",
-            port: Number(process.env.SMTP_PORT ?? 1025),
-            auth: process.env.SMTP_USER
-              ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-              : undefined,
-          },
-          from: process.env.AUTH_EMAIL_FROM ?? "hermes@example.com",
-        }),
+    Credentials({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Senha", type: "password" },
+      },
+      async authorize(creds) {
+        const email = String(creds?.email ?? "").trim().toLowerCase();
+        const password = String(creds?.password ?? "");
+        if (!email || password !== SHARED_PASSWORD) return null;
+        if (!ALLOWED_EMAILS.includes(email)) return null;
+        return { id: email, email, name: email };
+      },
+    }),
   ],
   callbacks: {
-    async session({ session, user }) {
+    ...authConfig.callbacks,
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+      }
+      // Relê role do banco a cada refresh — assim mudanças via
+      // /admin/users ou nas envs HERMES_ADMINS / HERMES_MANAGERS
+      // entram em vigor na próxima request, sem precisar logar de novo.
+      if (token.email) {
+        try {
+          token.role = await upsertUserAndGetRole(token.email as string);
+        } catch {
+          token.role = (token.role as UserRole | undefined) ?? "user";
+        }
+      }
+      return token;
+    },
+    async session({ session, token }) {
       if (session.user) {
-        session.user.id = user.id;
-        (session.user as { role?: string }).role = (user as { role?: string }).role;
+        session.user.id = (token.id as string) ?? (token.email as string);
+        session.user.email = (token.email as string) ?? session.user.email;
+        session.user.role = (token.role as UserRole | undefined) ?? "user";
       }
       return session;
     },
