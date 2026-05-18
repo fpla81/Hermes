@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import Optional
 
 import redis
 
@@ -55,7 +54,7 @@ def _hash(*parts: str) -> str:
     return h.hexdigest()
 
 
-def response_get(model: str, prompt: str) -> Optional[str]:
+def response_get(model: str, prompt: str) -> str | None:
     s = get_settings()
     if not s.llm_response_cache_enabled:
         return None
@@ -86,7 +85,7 @@ def response_set(model: str, prompt: str, response: str) -> None:
         log.debug("cache.response_set falhou: %s", exc)
 
 
-def context_cache_name_get(model: str, static_prefix: str) -> Optional[str]:
+def context_cache_name_get(model: str, static_prefix: str) -> str | None:
     c = _get_client()
     if c is None:
         return None

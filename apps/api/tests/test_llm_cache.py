@@ -6,7 +6,6 @@ Sem Redis real: monkeypatcha ``hermes_api.cache._get_client`` pra um
 
 from __future__ import annotations
 
-import json
 from typing import Any
 from unittest.mock import MagicMock
 
